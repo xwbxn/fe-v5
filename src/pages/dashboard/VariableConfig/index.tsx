@@ -35,12 +35,25 @@ interface IProps {
   onChange: (data: IVariable[], needSave: boolean, options?: IVariable[]) => void;
   onOpenFire?: () => void;
 }
+function attachVariable2Url(key, value) {
+  const { protocol, host, pathname, search } = window.location;
+  var searchObj = new URLSearchParams(search);
+  searchObj.set(key, value);
+  var newurl = `${protocol}//${host}${pathname}?${searchObj.toString()}`;
+  window.history.replaceState({ path: newurl }, '', newurl);
+}
 
 function index(props: IProps) {
-  const { id, cluster, editable = true, value, range, onChange, onOpenFire } = props;
+  const { id, cluster, editable = true, range, onChange, onOpenFire } = props;
   const [editing, setEditing] = useState<boolean>(false);
   const [data, setData] = useState<IVariable[]>([]);
   const [refreshFlag, setRefreshFlag] = useState<string>(_.uniqueId('refreshFlag_'));
+  const value = _.map(props.value, (item) => {
+    return {
+      ...item,
+      type: item.type || 'query',
+    };
+  });
 
   useEffect(() => {
     if (value) {
@@ -49,7 +62,7 @@ function index(props: IProps) {
         (async () => {
           for (let idx = 0; idx < value.length; idx++) {
             const item = _.cloneDeep(value[idx]);
-            if (item.definition) {
+            if (item.type === 'query' && item.definition) {
               const definition = idx > 0 ? replaceExpressionVars(item.definition, result, idx, id) : item.definition;
               const options = await convertExpressionToQuery(definition, range);
               const regFilterOptions = _.filter(options, (i) => !!i && (!item.reg || !stringToRegex(item.reg) || (stringToRegex(item.reg) as RegExp).test(i)));
@@ -58,10 +71,16 @@ function index(props: IProps) {
               result[idx].options = regFilterOptions;
               // 当大盘变量值为空时，设置默认值
               const selected = getVaraiableSelected(item.name, id);
-              if (!selected) {
+              if (selected === null) {
                 const head = regFilterOptions?.[0];
                 const defaultVal = item.multi ? (head ? [head] : []) : head;
                 setVaraiableSelected(item.name, defaultVal, id, true);
+              }
+            } else if (item.type === 'textbox') {
+              result[idx] = item;
+              const selected = getVaraiableSelected(item.name, id);
+              if (selected === null) {
+                setVaraiableSelected(item.name, item.defaultValue, id, true);
               }
             }
           }
