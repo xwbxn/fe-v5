@@ -160,18 +160,18 @@ export default function Graph(props: IProps) {
             />
           </Space>
           <Popover placement='left' content={graphStandardOptions[chartType]} trigger='click' autoAdjustOverflow={false} getPopupContainer={() => document.body}>
-            <a>
+            <a className='a-icon'>
               <SettingOutlined />
             </a>
           </Popover>
-          <a>
+          <a className='a-icon'>
             <SyncOutlined
               onClick={() => {
                 setRefreshFlag(_.uniqueId('refreshFlag_'));
               }}
             />
           </a>
-          <a>
+          <a className='a-icon'>
             <ShareAltOutlined
               onClick={() => {
                 const curCluster = localStorage.getItem('curCluster');
@@ -212,14 +212,14 @@ export default function Graph(props: IProps) {
               }}
             />
           </a>
-          <a>
+          <a className='a-icon'>
             <CloseCircleOutlined onClick={onClose} />
           </a>
         </Space>
       }
     >
       <div>
-        <Space>
+        <Space size={'large'}>
           <div>
             计算函数：
             <Dropdown
@@ -255,6 +255,7 @@ export default function Graph(props: IProps) {
             <Dropdown
               overlay={
                 <Menu
+                  style={{ maxHeight: '200px', overflowY: 'auto' }}
                   onClick={(e) => {
                     if (comparison.indexOf(e.key) === -1) {
                       setComparison([...comparison, e.key]);
@@ -268,7 +269,6 @@ export default function Graph(props: IProps) {
                   <Menu.Item key='7d'>7d</Menu.Item>
                 </Menu>
               }
-              overlayStyle={{ maxHeight: 400, overflow: 'auto' }}
             >
               <a className='ant-dropdown-link' onClick={(e) => e.preventDefault()}>
                 <PlusCircleOutlined />
@@ -309,6 +309,7 @@ export default function Graph(props: IProps) {
               <Dropdown
                 overlay={
                   <Menu
+                    style={{ maxHeight: '200px', overflowY: 'auto' }}
                     onClick={(e) => {
                       if (aggrGroups.indexOf(e.key) === -1) {
                         setAggrGroups([...aggrGroups, e.key]);
@@ -326,7 +327,6 @@ export default function Graph(props: IProps) {
                     )}
                   </Menu>
                 }
-                overlayStyle={{ maxHeight: 400, overflow: 'auto' }}
               >
                 <a className='ant-dropdown-link' onClick={(e) => e.preventDefault()}>
                   <PlusCircleOutlined />
