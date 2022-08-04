@@ -18,7 +18,7 @@ import React, { useState, useEffect } from 'react';
 import _ from 'lodash';
 import classNames from 'classnames';
 import { EditOutlined } from '@ant-design/icons';
-import { Range } from '@/components/DateRangePicker';
+import { IRawTimeRange } from '@/components/TimeRangePicker';
 import { convertExpressionToQuery, replaceExpressionVars, getVaraiableSelected, setVaraiableSelected, stringToRegex } from './constant';
 import { IVariable } from './definition';
 import DisplayItem from './DisplayItem';
@@ -31,7 +31,7 @@ interface IProps {
   cluster: string; // 集群变动后需要重新获取数据
   editable?: boolean;
   value?: IVariable[];
-  range: Range;
+  range: IRawTimeRange;
   onChange: (data: IVariable[], needSave: boolean, options?: IVariable[]) => void;
   onOpenFire?: () => void;
 }
@@ -68,7 +68,7 @@ function index(props: IProps) {
               const regFilterOptions = _.filter(options, (i) => !!i && (!item.reg || !stringToRegex(item.reg) || (stringToRegex(item.reg) as RegExp).test(i)));
               result[idx] = item;
               result[idx].fullDefinition = definition;
-              result[idx].options = regFilterOptions;
+              result[idx].options = _.sortBy(regFilterOptions);
               // 当大盘变量值为空时，设置默认值
               const selected = getVaraiableSelected(item.name, id);
               if (selected === null) {
@@ -85,7 +85,7 @@ function index(props: IProps) {
             }
           }
           setData(result);
-          onChange(value, false, _.isEmpty(result) ? undefined : result);
+          onChange(value, false, result);
         })();
       } catch (e) {
         console.log(e);

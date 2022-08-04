@@ -19,10 +19,14 @@ import _ from 'lodash';
 import semver from 'semver';
 import { v4 as uuidv4 } from 'uuid';
 import { Modal } from 'antd';
+import { useLocation } from 'react-router-dom';
+import querystring from 'query-string';
+import { useSelector } from 'react-redux';
 import RGL, { WidthProvider } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
-import { Range } from '@/components/DateRangePicker';
-import { updateDashboardConfigs } from '@/services/dashboardV2';
+import { RootState as AccountRootState, accountStoreState } from '@/store/accountInterface';
+import { IRawTimeRange } from '@/components/TimeRangePicker';
+import { updateDashboardConfigs as updateDashboardConfigsFunc } from '@/services/dashboardV2';
 import { Dashboard } from '@/store/dashboardInterface';
 import {
   buildLayout,
@@ -44,7 +48,7 @@ import './style.less';
 interface IProps {
   curCluster: string;
   dashboard: Dashboard;
-  range: Range;
+  range: IRawTimeRange;
   step: number | null;
   variableConfig: any;
   panels: any[];
@@ -56,6 +60,9 @@ interface IProps {
 const ReactGridLayout = WidthProvider(RGL);
 
 function index(props: IProps) {
+  const { profile } = useSelector<AccountRootState, accountStoreState>((state) => state.account);
+  const location = useLocation();
+  const { themeMode } = querystring.parse(location.search);
   const { curCluster, dashboard, range, step, variableConfig, panels, setPanels, onShareClick, onUpdated } = props;
   const layoutInitialized = useRef(false);
   const allowUpdateDashboardConfigs = useRef(false);
@@ -65,9 +72,17 @@ function index(props: IProps) {
     useCSSTransforms: false,
     draggableHandle: '.dashboards-panels-item-drag-handle',
   };
+  const updateDashboardConfigs = (dashboardId, options) => {
+    const roles = _.get(profile, 'roles', []);
+    const isAuthorized = !_.some(roles, (item) => item === 'Guest');
+    if (isAuthorized) {
+      return updateDashboardConfigsFunc(dashboardId, options);
+    }
+    return Promise.reject();
+  };
 
   return (
-    <div className='dashboards-panels'>
+    <div className='dashboards-panels scroll-container'>
       <ReactGridLayout
         layout={buildLayout(panels)}
         onLayoutChange={(layout) => {
@@ -116,6 +131,7 @@ function index(props: IProps) {
               {item.type !== 'row' ? (
                 semver.valid(item.version) ? (
                   <Renderer
+                    themeMode={themeMode as 'dark'}
                     dashboardId={_.toString(dashboard.id)}
                     id={item.id}
                     time={range}
@@ -145,6 +161,7 @@ function index(props: IProps) {
                         variableConfigWithOptions: variableConfig,
                         cluster: curCluster,
                         id: item.id,
+                        time: range,
                         initialValues: {
                           ...item,
                           id: item.id,
@@ -216,6 +233,7 @@ function index(props: IProps) {
                       variableConfigWithOptions: variableConfig,
                       cluster: curCluster,
                       id: item.id,
+                      time: range,
                       initialValues: {
                         type: 'timeseries',
                         targets: [

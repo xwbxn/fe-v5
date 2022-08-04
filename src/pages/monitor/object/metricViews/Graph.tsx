@@ -19,7 +19,7 @@ import _ from 'lodash';
 import classNames from 'classnames';
 import { Card, Space, Dropdown, Menu, Tag, Popover, Divider } from 'antd';
 import { ShareAltOutlined, SyncOutlined, CloseCircleOutlined, DownOutlined, PlusCircleOutlined, SettingOutlined, LineChartOutlined } from '@ant-design/icons';
-import { Range } from '@/components/DateRangePicker';
+import { IRawTimeRange } from '@/components/TimeRangePicker';
 import { getLabels, getQueryRange, getExprs, setTmpChartData } from '@/services/metricViews';
 import { getMatchStr } from './utils';
 import { IMatch } from '../types';
@@ -34,7 +34,7 @@ import { HexbinIcon } from './config';
 interface IProps {
   metric: string;
   match: IMatch;
-  range: Range;
+  range: IRawTimeRange;
   step?: number;
   onClose: () => void;
 }
@@ -56,7 +56,7 @@ export default function Graph(props: IProps) {
     shared: true,
     sharedSortDirection: 'desc',
     legend: true,
-    util: 'none',
+    unit: 'none',
     colorRange: colors[0].value,
     reverseColorOrder: false,
     colorDomainAuto: true,
@@ -81,7 +81,7 @@ export default function Graph(props: IProps) {
         sort: highLevelConfig.sharedSortDirection,
       },
       standardOptions: {
-        util: highLevelConfig.util,
+        util: highLevelConfig.unit,
       },
     },
   };
@@ -95,7 +95,7 @@ export default function Graph(props: IProps) {
     },
     options: {
       standardOptions: {
-        util: highLevelConfig.util,
+        util: highLevelConfig.unit,
       },
     },
   };

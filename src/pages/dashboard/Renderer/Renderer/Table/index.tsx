@@ -29,6 +29,7 @@ import './style.less';
 interface IProps {
   values: IPanel;
   series: any[];
+  themeMode?: 'dark';
 }
 
 const getColumnsKeys = (data: any[]) => {
@@ -49,7 +50,7 @@ export default function Stat(props: IProps) {
   const eleRef = useRef<HTMLDivElement>(null);
   const size = useSize(eleRef);
   const { dispatch } = useContext(Context);
-  const { values, series } = props;
+  const { values, series, themeMode } = props;
   const { custom, options, overrides } = values;
   const { showHeader, calc, aggrDimension, displayMode, columns, sortColumn, sortOrder, colorMode = 'value' } = custom;
   const [calculatedValues, setCalculatedValues] = React.useState([]);
@@ -70,7 +71,7 @@ export default function Stat(props: IProps) {
       series,
       calc,
       {
-        util: options?.standardOptions?.util,
+        unit: options?.standardOptions?.util,
         decimals: options?.standardOptions?.decimals,
       },
       options?.valueMappings,
@@ -107,8 +108,9 @@ export default function Stat(props: IProps) {
       className: 'renderer-table-td-content-value-container',
       render: (text, record) => {
         let textObj = {
-          text,
-          color: record.color || '#000',
+          value: text,
+          unit: '',
+          color: record.color || themeMode === 'dark' ? '#fff' : '#000',
         };
         const overrideProps = getOverridePropertiesByName(overrides, record.fields.refId);
         if (!_.isEmpty(overrideProps)) {
@@ -122,7 +124,8 @@ export default function Stat(props: IProps) {
               backgroundColor: colorMode === 'background' ? textObj.color : 'unset',
             }}
           >
-            {textObj.text}
+            {textObj.value}
+            {textObj.unit}
           </div>
         );
       },
@@ -147,7 +150,8 @@ export default function Stat(props: IProps) {
         render: (_text, record) => {
           if (key === 'value') {
             const textObj = {
-              text: record?.text,
+              value: record?.value,
+              unit: record?.unit,
               color: record?.color || '#000',
             };
             return (
@@ -158,7 +162,8 @@ export default function Stat(props: IProps) {
                   backgroundColor: colorMode === 'background' ? textObj.color : 'unset',
                 }}
               >
-                {textObj?.text}
+                {textObj?.value}
+                {textObj?.unit}
               </div>
             );
           }
@@ -204,7 +209,8 @@ export default function Stat(props: IProps) {
         className: 'renderer-table-td-content-value-container',
         render: (text) => {
           let textObj = {
-            text: text?.text,
+            value: text?.text,
+            unit: '',
             color: text?.color || '#000',
           };
           const overrideProps = getOverridePropertiesByName(overrides, name);
@@ -219,7 +225,8 @@ export default function Stat(props: IProps) {
                 backgroundColor: colorMode === 'background' ? textObj.color : 'unset',
               }}
             >
-              {textObj?.text}
+              {textObj?.value}
+              {textObj?.unit}
             </div>
           );
         },
