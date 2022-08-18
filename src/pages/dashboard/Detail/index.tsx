@@ -16,15 +16,18 @@
  */
 import React, { useState, useRef, useEffect } from 'react';
 import _ from 'lodash';
+import { useInterval } from 'ahooks';
 import { v4 as uuidv4 } from 'uuid';
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
+import queryString from 'query-string';
 import { useSelector } from 'react-redux';
+import { Alert } from 'antd';
 import PageLayout from '@/components/pageLayout';
-import { IRawTimeRange } from '@/components/TimeRangePicker';
+import { IRawTimeRange, getDefaultValue } from '@/components/TimeRangePicker';
 import { Dashboard } from '@/store/dashboardInterface';
 import { RootState as CommonRootState } from '@/store/common';
 import { CommonStoreState } from '@/store/commonInterface';
-import { getDashboard, updateDashboardConfigs } from '@/services/dashboardV2';
+import { getDashboard, updateDashboardConfigs, getDashboardPure } from '@/services/dashboardV2';
 import { SetTmpChartData } from '@/services/metric';
 import VariableConfig, { IVariable } from '../VariableConfig';
 import { replaceExpressionVars } from '../VariableConfig/constant';
@@ -44,24 +47,14 @@ interface URLParam {
   id: string;
 }
 
-const dashboardTimeCacheKey = 'dashboard-timeRangePicker-value';
-const getDefaultDashboardTime = () => {
-  const defaultTime = {
-    start: 'now-1h',
-    end: 'now',
-  };
-  const cache = localStorage.getItem(dashboardTimeCacheKey);
-  if (cache) {
-    try {
-      return JSON.parse(cache);
-    } catch (e) {
-      return defaultTime;
-    }
-  }
-  return defaultTime;
-};
+export const dashboardTimeCacheKey = 'dashboard-timeRangePicker-value';
 
 export default function DetailV2() {
+  const { search } = useLocation();
+  const locationQuery = queryString.parse(search);
+  if (_.get(locationQuery, '__cluster')) {
+    localStorage.setItem('curCluster', _.get(locationQuery, '__cluster'));
+  }
   const localCluster = localStorage.getItem('curCluster');
   const { id } = useParams<URLParam>();
   const refreshRef = useRef<{ closeRefresh: Function }>();
@@ -80,10 +73,18 @@ export default function DetailV2() {
   const [variableConfigWithOptions, setVariableConfigWithOptions] = useState<IVariable[]>();
   const [dashboardLinks, setDashboardLinks] = useState<ILink[]>();
   const [panels, setPanels] = useState<any[]>([]);
-  const [range, setRange] = useState<IRawTimeRange>(getDefaultDashboardTime());
+  const [range, setRange] = useState<IRawTimeRange>(
+    getDefaultValue(dashboardTimeCacheKey, {
+      start: 'now-1h',
+      end: 'now',
+    }),
+  );
   const [step, setStep] = useState<number | null>(null);
+  const [editable, setEditable] = useState(true);
+  let updateAtRef = useRef<number>();
   const refresh = () => {
     getDashboard(id).then((res) => {
+      updateAtRef.current = res.update_at;
       setDashboard(res);
       if (res.configs) {
         const configs = JSONParse(res.configs);
@@ -105,7 +106,8 @@ export default function DetailV2() {
     });
   };
   const handleUpdateDashboardConfigs = (id, configs) => {
-    updateDashboardConfigs(id, configs).then(() => {
+    updateDashboardConfigs(id, configs).then((res) => {
+      updateAtRef.current = res.update_at;
       refresh();
     });
   };
@@ -122,6 +124,16 @@ export default function DetailV2() {
   useEffect(() => {
     refresh();
   }, [id]);
+
+  useInterval(() => {
+    getDashboardPure(id).then((res) => {
+      if (updateAtRef.current && res.update_at > updateAtRef.current) {
+        if (editable) setEditable(false);
+      } else {
+        setEditable(true);
+      }
+    });
+  }, 2000);
 
   return (
     <PageLayout
@@ -140,7 +152,6 @@ export default function DetailV2() {
           }}
           range={range}
           setRange={(v) => {
-            localStorage.setItem(dashboardTimeCacheKey, JSON.stringify(v));
             setRange(v);
           }}
           step={step}
@@ -194,6 +205,11 @@ export default function DetailV2() {
     >
       <div>
         <div className='dashboard-detail-content'>
+          {!editable && (
+            <div style={{ padding: '5px 10px' }}>
+              <Alert type='warning' message='大盘已经被别人修改，为避免相互覆盖，请刷新大盘查看最新配置和数据' />
+            </div>
+          )}
           <div className='dashboard-detail-content-header'>
             <div className='variable-area'>
               {variableConfig && <VariableConfig onChange={handleVariableChange} value={variableConfig} cluster={curCluster} range={range} id={id} onOpenFire={stopAutoRefresh} />}
@@ -212,6 +228,7 @@ export default function DetailV2() {
           </div>
           {variableConfigWithOptions && (
             <Panels
+              editable={editable}
               panels={panels}
               setPanels={setPanels}
               curCluster={curCluster}
@@ -246,7 +263,8 @@ export default function DetailV2() {
                   window.open('/chart/' + ids);
                 });
               }}
-              onUpdated={() => {
+              onUpdated={(res) => {
+                updateAtRef.current = res.update_at;
                 refresh();
               }}
             />

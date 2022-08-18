@@ -42,6 +42,10 @@ interface IProps {
   setOperateType: (operateType: OperateType) => void;
 }
 
+const GREEN_COLOR = '#3FC453';
+const YELLOW_COLOR = '#FF9919';
+const RED_COLOR = '#FF656B';
+
 export default function List(props: IProps) {
   const { t, i18n } = useTranslation();
   const { curBusiId, setSelectedIdents, selectedRowKeys, setSelectedRowKeys, refreshFlag, setRefreshFlag, setOperateType } = props;
@@ -126,6 +130,114 @@ export default function List(props: IProps) {
       dataIndex: 'group_obj',
       render(groupObj: BusiGroupItem | null) {
         return groupObj ? groupObj.name : '未归组';
+      },
+    },
+    {
+      title: '状态',
+      width: 100,
+      dataIndex: 'target_up',
+      sorter: (a, b) => a.target_up - b.target_up,
+      render(text) {
+        if (text > 0) {
+          return (
+            <div
+              className='table-td-fullBG'
+              style={{
+                backgroundColor: GREEN_COLOR,
+              }}
+            >
+              UP
+            </div>
+          );
+        } else if (text < 1) {
+          return (
+            <div
+              className='table-td-fullBG'
+              style={{
+                backgroundColor: RED_COLOR,
+              }}
+            >
+              DOWN
+            </div>
+          );
+        }
+        return null;
+      },
+    },
+    {
+      title: '单核负载',
+      width: 100,
+      dataIndex: 'load_per_core',
+      sorter: (a, b) => a.load_per_core - b.load_per_core,
+      render(text) {
+        let backgroundColor = GREEN_COLOR;
+        if (text > 2) {
+          backgroundColor = YELLOW_COLOR;
+        }
+        if (text > 4) {
+          backgroundColor = RED_COLOR;
+        }
+        return (
+          <div
+            className='table-td-fullBG'
+            style={{
+              backgroundColor: backgroundColor,
+            }}
+          >
+            {_.floor(text, 1)}
+          </div>
+        );
+      },
+    },
+    {
+      title: '内存',
+      width: 100,
+      dataIndex: 'mem_util',
+      sorter: (a, b) => a.mem_util - b.mem_util,
+      render(text) {
+        let backgroundColor = GREEN_COLOR;
+        if (text > 70) {
+          backgroundColor = YELLOW_COLOR;
+        }
+        if (text > 85) {
+          backgroundColor = RED_COLOR;
+        }
+        return (
+          <div
+            className='table-td-fullBG'
+            style={{
+              backgroundColor: backgroundColor,
+            }}
+          >
+            {_.floor(text, 1)}%
+          </div>
+        );
+      },
+    },
+    {
+      title: '根分区',
+      width: 100,
+      dataIndex: 'disk_util',
+      sorter: (a, b) => a.disk_util - b.disk_util,
+      render(text) {
+        if (text === undefined) return '';
+        let backgroundColor = GREEN_COLOR;
+        if (text > 85) {
+          backgroundColor = YELLOW_COLOR;
+        }
+        if (text > 95) {
+          backgroundColor = RED_COLOR;
+        }
+        return (
+          <div
+            className='table-td-fullBG'
+            style={{
+              backgroundColor: backgroundColor,
+            }}
+          >
+            {_.floor(text, 1)}%
+          </div>
+        );
       },
     },
     {
