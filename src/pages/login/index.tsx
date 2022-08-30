@@ -63,7 +63,8 @@ export default function Login() {
       <div className='login-panel'>
         <div className='login-main  integration'>
           <div className='login-title'>
-            <img src={'/image/logo-l.svg'} style={{ width: '120px' }} />
+            {/* <img src={'/image/logo-l.svg'} style={{ width: '120px' }} /> */}
+            一体化监控运维平台
           </div>
           <Form form={form} layout='vertical' requiredMark={true}>
             <Form.Item
@@ -96,22 +97,6 @@ export default function Login() {
                 {t('登录')}
               </Button>
             </Form.Item>
-            <div className='login-other'>
-              <strong>其他登录方式：</strong>
-              <a
-                onClick={() => {
-                  getRedirectURL().then((res) => {
-                    if (res.dat) {
-                      window.location.href = res.dat;
-                    } else {
-                      message.warning('没有配置 OIDC 登录地址！');
-                    }
-                  });
-                }}
-              >
-                OIDC
-              </a>
-            </div>
           </Form>
         </div>
       </div>

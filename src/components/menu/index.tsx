@@ -169,10 +169,10 @@ const SideMenu: FC = () => {
           key: '/help/version',
           title: t('系统版本'),
         },
-        {
-          key: '/help/contact',
-          title: t('联系我们'),
-        },
+        // {
+        //   key: '/help/contact',
+        //   title: t('联系我们'),
+        // },
         {
           key: '/help/migrate',
           title: t('管理员迁移'),
@@ -262,11 +262,11 @@ const SideMenu: FC = () => {
         padding: '10px 0 10px 10px',
       }}
     >
-      <div className={`home ${collapsed ? 'collapse' : ''}`}>
+      {/* <div className={`home ${collapsed ? 'collapse' : ''}`}>
         <div className='name' onClick={() => history.push('/metric/explorer')} key='overview'>
           <img src={collapsed ? '/image/logo.svg' : '/image/logo-l(1).svg'} alt='' className='logo' />
         </div>
-      </div>
+      </div> */}
 
       <Menu
         className='left-menu-container'

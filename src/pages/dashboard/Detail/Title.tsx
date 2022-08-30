@@ -60,7 +60,7 @@ export default function Title(props: IProps) {
   };
 
   return (
-    <div className='dashboard-detail-header'>
+    <div className='dashboard-detail-header' style={{display: viewMode != 'fullscreen' ? '' : 'none'}}>
       <div className='dashboard-detail-header-left'>
         <RollbackOutlined className='back' onClick={() => history.push('/dashboards')} />
         {titleEditing ? (

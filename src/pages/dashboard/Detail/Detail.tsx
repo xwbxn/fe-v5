@@ -18,7 +18,7 @@ import React, { useState, useRef, useEffect, useContext } from 'react';
 import _ from 'lodash';
 import { useInterval } from 'ahooks';
 import { v4 as uuidv4 } from 'uuid';
-import { useParams, useLocation } from 'react-router-dom';
+import { useParams, useLocation, useHistory } from 'react-router-dom';
 import queryString from 'query-string';
 import { useSelector } from 'react-redux';
 import { Alert } from 'antd';
@@ -54,10 +54,12 @@ export default function DetailV2() {
   const { dispatch } = useContext(DetailContext);
   const { search } = useLocation();
   const locationQuery = queryString.parse(search);
+  const { viewMode } = locationQuery;
   if (_.get(locationQuery, '__cluster')) {
     localStorage.setItem('curCluster', _.get(locationQuery, '__cluster'));
   }
   const localCluster = localStorage.getItem('curCluster');
+  const history = useHistory();
   const { id } = useParams<URLParam>();
   const refreshRef = useRef<{ closeRefresh: Function }>();
   const { clusters } = useSelector<CommonRootState, CommonStoreState>((state) => state.common);
@@ -100,9 +102,9 @@ export default function DetailV2() {
         const variableConfig = configs.var
           ? configs
           : {
-              ...configs,
-              var: [],
-            };
+            ...configs,
+            var: [],
+          };
         setVariableConfig(
           _.map(variableConfig.var, (item) => {
             return _.omit(item, 'options'); // 兼容性代码，去除掉已保存的 options
@@ -158,6 +160,23 @@ export default function DetailV2() {
       });
     }
   }, 2000);
+
+  if (viewMode === 'fullscreen') {
+    document.addEventListener("keydown", (e) => {
+      if (e.key == 'Escape') {
+        delete locationQuery.viewMode
+        history.replace({
+          pathname: location.pathname,
+          search: queryString.stringify(locationQuery),
+        });
+        // TODO: 解决大盘 layout resize 问题
+        setTimeout(() => {
+          window.dispatchEvent(new Event('resize'));
+        }, 500);
+        document.removeEventListener("keydown", () => { })
+      }
+    })
+  }
 
   return (
     <PageLayout
@@ -227,7 +246,7 @@ export default function DetailV2() {
               <Alert type='warning' message='大盘已经被别人修改，为避免相互覆盖，请刷新大盘查看最新配置和数据' />
             </div>
           )}
-          <div className='dashboard-detail-content-header'>
+          <div className='dashboard-detail-content-header' style={{ display: viewMode != 'fullscreen' ? '' : 'none' }}>
             <div className='variable-area'>
               {variableConfig && <VariableConfig onChange={handleVariableChange} value={variableConfig} cluster={curCluster} range={range} id={id} onOpenFire={stopAutoRefresh} />}
             </div>

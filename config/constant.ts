@@ -33,8 +33,8 @@ export const mapEnv = (
 const NODE_ENV = process.env.NODE_ENV;
 
 const N9EAPIS = {
-  DEV: 'http://10.86.76.13:8085',
-  TEST: 'http://localhost:8765',
+  DEV: 'http://127.0.0.1:18000',
+  TEST: 'http://127.0.0.1:18000',
   PRODUCTION: '',
 };
 const N9EAPI = mapEnv(N9EAPIS, NODE_ENV);
