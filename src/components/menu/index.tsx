@@ -295,13 +295,13 @@ const SideMenu: FC = () => {
         padding: '10px 0 10px 10px',
       }}
     >
-      {collapsed !== '2' && (
+      {/* {collapsed !== '2' && (
         <div className={`home ${collapsed === '1' ? 'collapse' : ''}`}>
           <div className='name' onClick={() => history.push('/metric/explorer')} key='overview'>
             <img src={collapsed === '1' ? '/image/logo.svg' : '/image/logo-l.svg'} alt='' className='logo' />
           </div>
         </div>
-      )}
+      )} */}
       {defaultSelectedKeys && <FcMenu items={menus} onClick={handleClick} collapsed={collapsed} switchCollapsed={switchCollapsed} defaultSelectedKeys={defaultSelectedKeys} />}
     </div>
   );
