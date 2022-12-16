@@ -34,9 +34,12 @@ interface IProps {
   url?: string;
   datasourceId?: number;
   datasourceIdRequired?: boolean; // 如果不指定 datasourceId 则使用 X-Cluster 作为集群 key，否则 X-Data-Source-Id
+  datasourceName?: string;
   contentMaxHeight?: number;
   type?: 'table' | 'graph';
+  onTypeChange?: (type: 'table' | 'graph') => void;
   defaultTime?: IRawTimeRange | number;
+  onTimeChange?: (time: IRawTimeRange) => void; // 用于外部控制时间范围
   promQL?: string;
   graphOperates?: {
     enabled: boolean;
@@ -53,10 +56,13 @@ export default function index(props: IProps) {
     url = '/api/v1/datasource/prometheus',
     datasourceId,
     datasourceIdRequired,
+    datasourceName,
     promQL,
     contentMaxHeight = 300,
     type = 'table',
+    onTypeChange,
     defaultTime,
+    onTimeChange,
     graphOperates = {
       enabled: false,
     },
@@ -90,7 +96,11 @@ export default function index(props: IProps) {
         setRange(defaultTime);
       }
     }
-  }, []);
+  }, [defaultTime]);
+
+  useEffect(() => {
+    setTabActiveKey(type);
+  }, [type]);
 
   useEffect(() => {
     setValue(promql);
@@ -124,14 +134,13 @@ export default function index(props: IProps) {
                       'X-Data-Source-Id': _.toString(datasourceId),
                     }
                   : {
-                      'X-Cluster': localStorage.getItem('curCluster') || 'DEFAULT',
+                      'X-Cluster': datasourceName || localStorage.getItem('curCluster') || 'DEFAULT',
                       Authorization: `Bearer ${localStorage.getItem('access_token') || ''}`,
                     }
               }
               value={value}
               onChange={setValue}
               executeQuery={(val) => {
-                console.log(val);
                 setPromql(val);
               }}
               completeEnabled={completeEnabled}
@@ -160,7 +169,7 @@ export default function index(props: IProps) {
                 setPromql(value);
               }}
             >
-              Execute
+              查询
             </Button>
           </span>
         </Input.Group>
@@ -172,6 +181,7 @@ export default function index(props: IProps) {
         activeKey={tabActiveKey}
         onChange={(key: 'table' | 'graph') => {
           setTabActiveKey(key);
+          onTypeChange && onTypeChange(key);
           setErrorContent('');
           setQueryStats(null);
         }}
@@ -184,11 +194,21 @@ export default function index(props: IProps) {
             contentMaxHeight={contentMaxHeight}
             datasourceId={datasourceId}
             datasourceIdRequired={datasourceIdRequired}
+            datasourceName={datasourceName}
             promql={promql}
             setQueryStats={setQueryStats}
             setErrorContent={setErrorContent}
             timestamp={timestamp}
-            setTimestamp={setTimestamp}
+            setTimestamp={(val) => {
+              setTimestamp(val);
+              if (val) {
+                onTimeChange &&
+                  onTimeChange({
+                    ...range,
+                    end: moment.unix(val),
+                  });
+              }
+            }}
             refreshFlag={refreshFlag}
           />
         </TabPane>
@@ -198,11 +218,15 @@ export default function index(props: IProps) {
             contentMaxHeight={contentMaxHeight}
             datasourceId={datasourceId}
             datasourceIdRequired={datasourceIdRequired}
+            datasourceName={datasourceName}
             promql={promql}
             setQueryStats={setQueryStats}
             setErrorContent={setErrorContent}
             range={range}
-            setRange={setRange}
+            setRange={(newRange) => {
+              setRange(newRange);
+              onTimeChange && onTimeChange(newRange);
+            }}
             step={step}
             setStep={setStep}
             graphOperates={graphOperates}

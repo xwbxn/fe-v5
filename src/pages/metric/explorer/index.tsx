@@ -14,13 +14,19 @@
  * limitations under the License.
  *
  */
-import React, { useState } from 'react';
-import { Button, Card } from 'antd';
+import React, { useState, useEffect, useRef } from 'react';
+import { Button, Card, Space, Input, Form, Select } from 'antd';
 import { LineChartOutlined, PlusOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import _ from 'lodash';
 import PageLayout from '@/components/pageLayout';
 import { generateID } from '@/utils';
-import PromGraph from '@/components/PromGraphCpt';
+import AdvancedWrap from '@/components/AdvancedWrap';
+import InputGroupWithFormItem from '@/components/InputGroupWithFormItem';
+import { getCommonESClusters, getCommonClusters, getCommonSLSClusters } from '@/services/common';
+import { datasourceCatesMap, DatasourceCateEnum } from '@/utils/constant';
+import Elasticsearch from './Elasticsearch';
+import Prometheus from './Prometheus';
+import AliyunSLS, { setDefaultValues } from './AliyunSLS';
 import './index.less';
 
 type PanelMeta = { id: string; defaultPromQL?: string };
@@ -35,11 +41,198 @@ function getUrlParamsByName(name) {
   return '';
 }
 
-const PanelList: React.FC = () => {
+const getDefaultDatasourceName = (datasourceCate, datasourceList) => {
+  const localPrometheus = localStorage.getItem('curCluster'); // curCluster 是全局的 key name
+  const localElasticsearch = localStorage.getItem('datasource_es_name');
+  const localAliyunSLS = localStorage.getItem('datasource_aliyunsls_name');
+  if (datasourceCate === 'prometheus') return localPrometheus || _.get(datasourceList, [datasourceCate, 0]);
+  if (datasourceCate === 'elasticsearch') return localElasticsearch || _.get(datasourceList, [datasourceCate, 0]);
+  if (datasourceCate === 'aliyun-sls') return localAliyunSLS || _.get(datasourceList, [datasourceCate, 0]);
+};
+
+const setDefaultDatasourceName = (datasourceCate, value) => {
+  if (datasourceCate === 'prometheus') {
+    localStorage.setItem('curCluster', value);
+  }
+  if (datasourceCate === 'elasticsearch') {
+    localStorage.setItem('datasource_es_name', value);
+  }
+  if (datasourceCate === 'aliyun-sls') {
+    localStorage.setItem('datasource_aliyunsls_name', value);
+  }
+};
+
+const Panel = ({
+  defaultPromQL,
+  removePanel,
+  datasourceList,
+  id,
+}: {
+  id: string;
+  datasourceList: {
+    prometheus: string[];
+    elasticsearch: string[];
+    'aliyun-sls': string[];
+  };
+  defaultPromQL: string;
+  removePanel: (id: string) => void;
+}) => {
+  const [form] = Form.useForm();
+  const headerExtraRef = useRef<HTMLDivElement>(null);
+  const [datasourceCate, setDatasourceCate] = useState(localStorage.getItem('datasource_cate') || DatasourceCateEnum.prometheus);
+
+  useEffect(() => {
+    localStorage.setItem('datasource_cate', datasourceCate);
+    if (datasourceCate === 'aliyun-sls') {
+      setDefaultValues(form);
+    }
+  }, [datasourceCate]);
+
+  return (
+    <Card bodyStyle={{ padding: 16 }} className='panel'>
+      <Form
+        form={form}
+        initialValues={{
+          datasourceCate: datasourceCate,
+          datasourceName: getDefaultDatasourceName(datasourceCate, datasourceList),
+        }}
+      >
+        <Space align='start'>
+          <InputGroupWithFormItem label='数据源类型' labelWidth={84}>
+            <AdvancedWrap
+              var='VITE_IS_QUERY_ES_DS'
+              children={(isES) => {
+                return (
+                  <Form.Item name='datasourceCate' noStyle>
+                    <Select
+                      dropdownMatchSelectWidth={false}
+                      style={{ minWidth: 70 }}
+                      onChange={(val) => {
+                        if (typeof val === 'string') {
+                          setDatasourceCate(val);
+                        }
+                        form.setFieldsValue({
+                          datasourceName: getDefaultDatasourceName(val, datasourceList),
+                        });
+                      }}
+                    >
+                      {_.map(isES ? datasourceCatesMap.all : datasourceCatesMap.normal, (item) => (
+                        <Select.Option key={item.value} value={item.value}>
+                          {item.label}
+                        </Select.Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                );
+              }}
+            />
+          </InputGroupWithFormItem>
+          <Form.Item shouldUpdate={(prev, curr) => prev.datasourceCate !== curr.datasourceCate} noStyle>
+            {({ getFieldValue }) => {
+              const cate = getFieldValue('datasourceCate');
+              return (
+                <Input.Group compact>
+                  <span
+                    className='ant-input-group-addon'
+                    style={{
+                      width: 'max-content',
+                      height: 32,
+                      lineHeight: '32px',
+                    }}
+                  >
+                    关联数据源
+                  </span>
+                  <Form.Item
+                    name='datasourceName'
+                    rules={[
+                      {
+                        required: cate !== 'prometheus',
+                        message: '请选择数据源',
+                      },
+                    ]}
+                  >
+                    <Select
+                      placeholder='选择数据源'
+                      style={{ minWidth: 70 }}
+                      dropdownMatchSelectWidth={false}
+                      onChange={(val: string) => {
+                        setDefaultDatasourceName(cate, val);
+                      }}
+                    >
+                      {_.map(datasourceList[cate], (item) => (
+                        <Select.Option value={item} key={item}>
+                          {item}
+                        </Select.Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Input.Group>
+              );
+            }}
+          </Form.Item>
+          <div ref={headerExtraRef} />
+        </Space>
+        <Form.Item shouldUpdate={(prev, curr) => prev.datasourceCate !== curr.datasourceCate || prev.datasourceName !== curr.datasourceName} noStyle>
+          {({ getFieldValue }) => {
+            const datasourceCate = getFieldValue('datasourceCate');
+            const datasourceName = getFieldValue('datasourceName');
+            if (datasourceCate === DatasourceCateEnum.prometheus) {
+              return <Prometheus defaultPromQL={defaultPromQL} />;
+            } else if (datasourceCate === DatasourceCateEnum.elasticsearch) {
+              return <Elasticsearch datasourceName={datasourceName} form={form} />;
+            } else if (datasourceCate === DatasourceCateEnum.aliyunSLS) {
+              return <AliyunSLS datasourceCate={DatasourceCateEnum.aliyunSLS} datasourceName={datasourceName} headerExtra={headerExtraRef.current} form={form} />;
+            }
+          }}
+        </Form.Item>
+      </Form>
+      <span
+        className='remove-panel-btn'
+        onClick={() => {
+          removePanel(id);
+        }}
+      >
+        <CloseCircleOutlined />
+      </span>
+    </Card>
+  );
+};
+
+const PanelList = () => {
   const [panelList, setPanelList] = useState<PanelMeta[]>([{ id: generateID(), defaultPromQL: decodeURIComponent(getUrlParamsByName('promql')) }]);
+  const [datasourceList, setDatasourceList] = useState<{
+    prometheus: string[];
+    elasticsearch: string[];
+    'aliyun-sls': string[];
+  }>({
+    prometheus: [],
+    elasticsearch: [],
+    'aliyun-sls': [],
+  });
+
+  useEffect(() => {
+    const fetchDatasourceList = async () => {
+      const promList = await getCommonClusters().then((res) => res.dat);
+      const esList = await getCommonESClusters().then((res) => res.dat);
+      const slsList = await getCommonSLSClusters().then((res) => res.dat);
+      setDatasourceList({
+        prometheus: promList,
+        elasticsearch: esList,
+        'aliyun-sls': slsList,
+      });
+    };
+    fetchDatasourceList().catch(() => {
+      setDatasourceList({
+        prometheus: [],
+        elasticsearch: [],
+        'aliyun-sls': [],
+      });
+    });
+  }, []);
+
   // 添加一个查询面板
   function addPanel() {
-    setPanelList((a) => [
+    setPanelList(() => [
       ...panelList,
       {
         id: generateID(),
@@ -49,25 +242,13 @@ const PanelList: React.FC = () => {
 
   // 删除指定查询面板
   function removePanel(id) {
-    setPanelList(panelList.reduce<PanelMeta[]>((acc, panel) => (panel.id !== id ? [...acc, { ...panel }] : acc), []));
+    setPanelList(_.filter(panelList, (item) => item.id !== id));
   }
 
   return (
     <>
       {panelList.map(({ id, defaultPromQL = '' }) => {
-        return (
-          <Card key={id} bodyStyle={{ padding: 16 }} className='panel'>
-            <PromGraph url='/api/n9e/prometheus' promQL={defaultPromQL} datasourceIdRequired={false} graphOperates={{ enabled: true }} globalOperates={{ enabled: true }} />
-            <span
-              className='remove-panel-btn'
-              onClick={() => {
-                removePanel(id);
-              }}
-            >
-              <CloseCircleOutlined />
-            </span>
-          </Card>
-        );
+        return <Panel key={id} id={id} removePanel={removePanel} defaultPromQL={defaultPromQL} datasourceList={datasourceList} />;
       })}
       <div className='add-prometheus-panel'>
         <Button size='large' onClick={addPanel}>
@@ -79,19 +260,10 @@ const PanelList: React.FC = () => {
   );
 };
 
-const MetricExplorerPage: React.FC = () => {
-  const [rerenderFlag, setRerenderFlag] = useState(_.uniqueId('rerenderFlag_'));
-
+const MetricExplorerPage = () => {
   return (
-    <PageLayout
-      title='即时查询'
-      icon={<LineChartOutlined />}
-      hideCluster={false}
-      onChangeCluster={() => {
-        setRerenderFlag(_.uniqueId('rerenderFlag_'));
-      }}
-    >
-      <div className='prometheus-page' key={rerenderFlag}>
+    <PageLayout title='即时查询' icon={<LineChartOutlined />} hideCluster>
+      <div className='prometheus-page'>
         <PanelList />
       </div>
     </PageLayout>

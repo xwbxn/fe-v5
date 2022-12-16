@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  */
-import FcMenu, { IMenuProps } from '@/components/fc-menu';
+import FcMenu, { IMenuProps } from '@fc-components/menu';
 import React, { FC, useState, useEffect } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
@@ -37,9 +37,12 @@ let lazyMenu = Packages.reduce((result: any, module: Entry) => {
 }, []);
 const getDefaultOpenKey = (menus: any, pathname) => {
   const currentSubMenu = _.find(menus, (subMenus: any) => {
-    return _.some(subMenus.children, (menu) => {
-      return pathname.indexOf(menu.key) !== -1;
-    });
+    return _.some(
+      subMenus.children.filter((i) => !!i),
+      (menu) => {
+        return pathname.indexOf(menu.key) !== -1;
+      },
+    );
   });
   if (currentSubMenu) {
     return currentSubMenu.key;
@@ -49,7 +52,7 @@ const defaultSelectedKey = (menus: any, pathname) => {
   let key;
   _.forEach(menus, (subMenus: any) => {
     _.forEach(subMenus.children, (menu: any) => {
-      if (pathname.indexOf(menu.key) !== -1) {
+      if (menu && pathname.indexOf(menu.key) !== -1) {
         key = menu.key;
       }
     });
@@ -277,7 +280,7 @@ const SideMenu: FC = () => {
           const { dat } = res;
           const newMenus = [...menuList];
           newMenus.forEach((menu) => {
-            menu.children = menu.children.filter((item) => dat.includes(item.key));
+            menu.children = menu.children.filter((item) => item && dat.includes(item.key));
           });
           setMenus(newMenus);
         });
@@ -302,7 +305,9 @@ const SideMenu: FC = () => {
           </div>
         </div>
       )} */}
-      {defaultSelectedKeys && <FcMenu items={menus} onClick={handleClick} collapsed={collapsed} switchCollapsed={switchCollapsed} defaultSelectedKeys={defaultSelectedKeys} />}
+      {defaultSelectedKeys && (
+        <FcMenu items={menus} onClick={handleClick} collapsed={collapsed} switchCollapsed={switchCollapsed} defaultSelectedKeys={defaultSelectedKeys} activeMode='hover' />
+      )}
     </div>
   );
 };
