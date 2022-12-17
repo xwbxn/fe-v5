@@ -30,6 +30,13 @@ export interface ITarget {
   legendFormat: string;
   time?: Range; // 固定时间范围
   step?: number; // 固定时间间隔
+  query?: {
+    index: string;
+    filters: string;
+    values: {
+      func: string;
+    }[];
+  };
 }
 
 export type IType = 'row' | 'timeseries' | 'stat' | 'table' | 'pie' | 'hexbin' | 'barGauge';
@@ -107,6 +114,7 @@ export interface ITimeseriesStyles {
     type: 'linear' | 'log';
     log?: 10 | 2;
   };
+  spanNulls: boolean;
 }
 
 export interface IStatStyles {

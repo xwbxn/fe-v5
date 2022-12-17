@@ -140,13 +140,13 @@ export default function Chart() {
                     key={index}
                     time={range}
                     step={step}
-                    type={item.dataProps?.type}
                     values={_.merge({}, item.dataProps, {
                       options: {
                         legend: {
                           displayMode: 'table',
                         },
                       },
+                      datasourceName: item.dataProps?.datasourceName || curCluster,
                     })}
                     isPreview
                   />

@@ -3,12 +3,20 @@ import { Form, AutoComplete } from 'antd';
 import _ from 'lodash';
 import { getIndices } from '@/services/warning';
 
-export default function IndexSelect({ prefixName = [], cate, cluster }: any) {
+interface IProps {
+  prefixField?: any;
+  prefixName?: string[];
+  cate: string;
+  cluster: string[];
+  name?: string | string[]; // 可自定义 name 或者 [...prefixName, 'query', 'index']
+}
+
+export default function IndexSelect({ prefixField = {}, prefixName = [], cate, cluster, name }: IProps) {
   const [options, setOptions] = useState([]);
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    if (cate === 'elasticsearch' && !_.isEmpty(cluster)) {
+    if ((cate === 'elasticsearch' || cate === 'elasticsearch-log') && !_.isEmpty(cluster)) {
       getIndices({ cate, cluster: _.join(cluster, ' ') }).then((res) => {
         setOptions(
           _.map(res.dat, (item) => {
@@ -36,7 +44,8 @@ export default function IndexSelect({ prefixName = [], cate, cluster }: any) {
           <br />
         </div>
       }
-      name={[...prefixName, 'query', 'index']}
+      {...prefixField}
+      name={name || [...prefixName, 'query', 'index']}
       rules={[
         {
           required: true,

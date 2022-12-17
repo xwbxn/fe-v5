@@ -14,16 +14,21 @@
  * limitations under the License.
  *
  */
-import React, { useRef, useContext, useEffect } from 'react';
+import React, { useRef, useEffect, useState, useMemo } from 'react';
 import _ from 'lodash';
-import { Table } from 'antd';
+import { Table, Input, Space, Button } from 'antd';
+import { SearchOutlined, FilterOutlined } from '@ant-design/icons';
+import type { ColumnType } from 'antd/es/table';
+import type { FilterConfirmProps } from 'antd/es/table/interface';
 import { useSize } from 'ahooks';
+import { useAntdResizableHeader } from '@minko-fe/use-antd-resizable-header';
+import '@minko-fe/use-antd-resizable-header/dist/style.css';
 import { IPanel } from '../../../types';
 import getCalculatedValuesBySeries, { getSerieTextObj } from '../../utils/getCalculatedValuesBySeries';
 import getOverridePropertiesByName from '../../utils/getOverridePropertiesByName';
 import localeCompare from '../../utils/localeCompare';
 import formatToTable from '../../utils/formatToTable';
-import { DetailContext } from '../../../DetailContext';
+import { useGlobalState } from '../../../globalState';
 import './style.less';
 
 interface IProps {
@@ -49,15 +54,15 @@ const getSortOrder = (key, sortObj) => {
 export default function Stat(props: IProps) {
   const eleRef = useRef<HTMLDivElement>(null);
   const size = useSize(eleRef);
-  const { dispatch } = useContext(DetailContext);
   const { values, series, themeMode } = props;
   const { custom, options, overrides } = values;
   const { showHeader, calc, aggrDimension, displayMode, columns, sortColumn, sortOrder, colorMode = 'value' } = custom;
-  const [calculatedValues, setCalculatedValues] = React.useState([]);
-  const [sortObj, setSortObj] = React.useState({
+  const [calculatedValues, setCalculatedValues] = useState([]);
+  const [sortObj, setSortObj] = useState({
     sortColumn,
     sortOrder,
   });
+  const [tableFields, setTableFields] = useGlobalState('tableFields');
 
   useEffect(() => {
     setSortObj({
@@ -77,14 +82,50 @@ export default function Stat(props: IProps) {
       },
       options?.valueMappings,
     );
-    if (dispatch) {
-      dispatch({
-        type: 'updateMetric',
-        payload: getColumnsKeys(data),
-      });
-    }
+    setTableFields(getColumnsKeys(data));
     setCalculatedValues(data);
   }, [JSON.stringify(series), calc, JSON.stringify(options)]);
+
+  const searchInput = useRef<any>(null);
+  const handleSearch = (confirm: (param?: FilterConfirmProps) => void) => {
+    confirm();
+  };
+  const handleReset = (clearFilters: () => void, confirm: (param?: FilterConfirmProps) => void) => {
+    clearFilters();
+    confirm();
+  };
+  const getColumnSearchProps = (names: string[]): ColumnType<any> => ({
+    filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
+      <div style={{ padding: 8 }}>
+        <Input
+          ref={searchInput}
+          value={selectedKeys[0]}
+          onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+          onPressEnter={() => handleSearch(confirm)}
+          style={{ marginBottom: 8, display: 'block' }}
+        />
+        <Space>
+          <Button type='primary' onClick={() => handleSearch(confirm)} icon={<SearchOutlined />} size='small' style={{ width: 90 }}>
+            Search
+          </Button>
+          <Button onClick={() => clearFilters && handleReset(clearFilters, confirm)} size='small' style={{ width: 90 }}>
+            Reset
+          </Button>
+        </Space>
+      </div>
+    ),
+    filterIcon: (filtered: boolean) => <FilterOutlined style={{ color: filtered ? '#1890ff' : undefined }} />,
+    onFilter: (value, record) => {
+      const fieldVal = _.get(record, names);
+      if (typeof fieldVal === 'string' || _.isArray(fieldVal)) {
+        return fieldVal
+          .toString()
+          .toLowerCase()
+          .includes((value as string).toLowerCase());
+      }
+      return true;
+    },
+  });
 
   let tableDataSource = calculatedValues;
   let tableColumns: any[] = [
@@ -92,11 +133,13 @@ export default function Stat(props: IProps) {
       title: 'name',
       dataIndex: 'name',
       key: 'name',
+      width: _.get(size, 'width') - 200,
       sorter: (a, b) => {
         return localeCompare(a.name, b.name);
       },
       sortOrder: getSortOrder('name', sortObj),
       render: (text) => <div className='renderer-table-td-content'>{text}</div>,
+      ...getColumnSearchProps(['name']),
     },
     {
       title: 'value',
@@ -113,7 +156,7 @@ export default function Stat(props: IProps) {
           unit: '',
           color: record.color || (themeMode === 'dark' ? '#fff' : '#000'),
         };
-        const overrideProps = getOverridePropertiesByName(overrides, record.fields.refId);
+        const overrideProps = getOverridePropertiesByName(overrides, record.fields?.refId);
         if (!_.isEmpty(overrideProps)) {
           textObj = getSerieTextObj(record?.stat, overrideProps?.standardOptions, overrideProps?.valueMappings);
         }
@@ -130,21 +173,23 @@ export default function Stat(props: IProps) {
           </div>
         );
       },
+      ...getColumnSearchProps(['text']),
     },
   ];
 
   if (displayMode === 'labelsOfSeriesToRows') {
     const columnsKeys = _.isEmpty(columns) ? _.concat(getColumnsKeys(calculatedValues), 'value') : columns;
-    tableColumns = _.map(columnsKeys, (key) => {
+    tableColumns = _.map(columnsKeys, (key, idx) => {
       return {
-        title: key,
+        title: <span title={key}>{key}</span>,
         dataIndex: key,
         key: key,
+        width: idx < columnsKeys.length - 1 ? _.get(size, 'width') / columnsKeys.length : undefined,
         sorter: (a, b) => {
           if (key === 'value') {
             return a.stat - b.stat;
           }
-          return localeCompare(a.name, b.name);
+          return localeCompare(_.toString(_.get(a.metric, key)), _.toString(_.get(b.metric, key)));
         },
         sortOrder: getSortOrder(key, sortObj),
         className: key === 'value' ? 'renderer-table-td-content-value-container' : '',
@@ -168,8 +213,9 @@ export default function Stat(props: IProps) {
               </div>
             );
           }
-          return _.get(record.metric, key);
+          return <span title={_.get(record.metric, key)}>{_.get(record.metric, key)}</span>;
         },
+        ...getColumnSearchProps(['metric', key]),
       };
     });
   }
@@ -188,14 +234,16 @@ export default function Stat(props: IProps) {
         title: aggrDimension,
         dataIndex: aggrDimension,
         key: aggrDimension,
+        width: _.get(size, 'width') / (groupNames.length + 1),
         sorter: (a, b) => {
           return localeCompare(a[aggrDimension], b[aggrDimension]);
         },
         sortOrder: getSortOrder(aggrDimension, sortObj),
         render: (text) => <div className='renderer-table-td-content'>{text}</div>,
+        ...getColumnSearchProps([aggrDimension]),
       },
     ];
-    _.map(groupNames, (name) => {
+    _.map(groupNames, (name, idx) => {
       const result = _.find(tableDataSource, (item) => {
         return item[name];
       });
@@ -203,6 +251,7 @@ export default function Stat(props: IProps) {
         title: result[name]?.name,
         dataIndex: name,
         key: name,
+        width: idx < groupNames.length - 1 ? _.get(size, 'width') / (groupNames.length + 1) : undefined,
         sorter: (a, b) => {
           return _.get(a[name], 'stat') - _.get(b[name], 'stat');
         },
@@ -238,6 +287,7 @@ export default function Stat(props: IProps) {
             </div>
           );
         },
+        ...getColumnSearchProps([name, 'text']),
       });
     });
   }
@@ -245,6 +295,10 @@ export default function Stat(props: IProps) {
   const headerHeight = showHeader ? 40 : 0;
   const height = _.get(size, 'height') - headerHeight;
   const realHeight = isNaN(height) ? 0 : height;
+
+  const { components, resizableColumns, tableWidth, resetColumns } = useAntdResizableHeader({
+    columns: useMemo(() => tableColumns, [JSON.stringify(columns), displayMode, JSON.stringify(calculatedValues), sortObj, themeMode, aggrDimension, overrides, size]),
+  });
 
   return (
     <div className='renderer-table-container' ref={eleRef}>
@@ -255,8 +309,8 @@ export default function Stat(props: IProps) {
           showSorterTooltip={false}
           showHeader={showHeader}
           dataSource={tableDataSource}
-          columns={tableColumns}
-          scroll={{ y: realHeight }}
+          columns={resizableColumns}
+          scroll={{ y: realHeight, x: tableWidth }}
           bordered={false}
           pagination={false}
           onChange={(pagination, filters, sorter: any) => {
@@ -265,6 +319,7 @@ export default function Stat(props: IProps) {
               sortOrder: sorter.order,
             });
           }}
+          components={components}
         />
       </div>
     </div>

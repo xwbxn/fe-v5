@@ -18,14 +18,15 @@ interface IOptions {
   step: number | null;
   targets: ITarget[];
   variableConfig?: IVariable[];
+  spanNulls?: boolean;
 }
 
 const getDefaultStepByStartAndEnd = (start: number, end: number) => {
   return Math.max(Math.floor((end - start) / 240), 1);
 };
 
-export default async function query(options: IOptions) {
-  const { dashboardId, id, time, step, targets, variableConfig } = options;
+export default async function prometheusQuery(options: IOptions) {
+  const { dashboardId, id, time, step, targets, variableConfig, spanNulls, datasourceName } = options;
   if (!time.start) return;
   const parsedRange = parseRange(time);
   let start = moment(parsedRange.start).unix();
@@ -72,7 +73,7 @@ export default async function query(options: IOptions) {
         signalKey += `-${target.expr}`;
       }
     });
-    const res = await fetchHistoryBatch({ queries: batchParams }, signalKey);
+    const res = await fetchHistoryBatch({ queries: batchParams }, signalKey, datasourceName);
     const dat = res.dat || [];
     for (let i = 0; i < dat?.length; i++) {
       var item = {
@@ -88,7 +89,7 @@ export default async function query(options: IOptions) {
           name: target?.legend ? replaceExpressionBracket(target?.legend, serie.metric) : getSerieName(serie.metric),
           metric: serie.metric,
           expr: item.expr,
-          data: completeBreakpoints(_step, serie.values),
+          data: !spanNulls ? completeBreakpoints(_step, serie.values) : serie.values,
         });
       });
     }

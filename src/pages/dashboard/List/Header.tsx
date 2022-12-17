@@ -15,9 +15,13 @@
  *
  */
 import React from 'react';
-import { Input, Button, Dropdown, Modal, message } from 'antd';
+import { Input, Button, Dropdown, Modal, Space, message } from 'antd';
 import { SearchOutlined, DownOutlined } from '@ant-design/icons';
+import { useSelector } from 'react-redux';
 import { removeDashboards } from '@/services/dashboardV2';
+import { RootState as CommonRootState } from '@/store/common';
+import { CommonStoreState } from '@/store/commonInterface';
+import RefreshIcon from '@/components/RefreshIcon';
 import FormCpt from './Form';
 import Import from './Import';
 
@@ -30,22 +34,30 @@ interface IProps {
 }
 
 export default function Header(props: IProps) {
+  const { clusters } = useSelector<CommonRootState, CommonStoreState>((state) => state.common);
   const { busiId, selectRowKeys, refreshList, searchVal, onSearchChange } = props;
 
   return (
     <>
-      <div className='table-handle'>
-        <div className='table-handle-search'>
-          <Input
-            className={'searchInput'}
-            value={searchVal}
-            onChange={(e) => {
-              onSearchChange(e.target.value);
+      <div className='table-handle' style={{ padding: 0 }}>
+        <Space>
+          <RefreshIcon
+            onClick={() => {
+              refreshList();
             }}
-            prefix={<SearchOutlined />}
-            placeholder='大盘名称、分类标签'
           />
-        </div>
+          <div className='table-handle-search'>
+            <Input
+              className={'searchInput'}
+              value={searchVal}
+              onChange={(e) => {
+                onSearchChange(e.target.value);
+              }}
+              prefix={<SearchOutlined />}
+              placeholder='大盘名称、分类标签'
+            />
+          </div>
+        </Space>
         <div className='table-handle-buttons'>
           <Button
             type='primary'
@@ -54,6 +66,7 @@ export default function Header(props: IProps) {
                 mode: 'crate',
                 busiId,
                 refreshList,
+                clusters,
               });
             }}
             ghost

@@ -6,6 +6,11 @@ html {
   --slider-rail: linear-gradient(to right, #45d678 0, #45d678 100%);
 }
 
+@font-face {
+  font-family: Monda-Regular;
+  src: url('/font/Monda-Regular.ttf');
+}
+
 .App {
   display: flex;
   color: #333752;
@@ -253,7 +258,7 @@ input::placeholder {
 
 .flash-cat-block {
   padding: 16px;
-  background: #e5e5e5;
+  background: #f5f5f5;
 }
 
 .flash-cat-border-block {
@@ -344,7 +349,23 @@ input::placeholder {
 }
 
 .edit_area_background {
-  background-color: #f6f6f6;
+  // background-color: #f6f6f6;
+  border: 1px solid #f6f6f6;
   border-radius: 4px;
   padding: 8px;
+}
+
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-thumb {
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.16);
+}
+
+.license-off {
+  .ant-modal-confirm-btns {
+    display: none;
+  }
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  */
-import React, { useState, useRef, useEffect, useContext } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import _ from 'lodash';
 import { useInterval } from 'ahooks';
 import { v4 as uuidv4 } from 'uuid';
@@ -37,9 +37,9 @@ import Panels from '../Panels';
 import Title from './Title';
 import { JSONParse } from '../utils';
 import Editor from '../Editor';
-import { defaultCustomValuesMap } from '../Editor/config';
+import { defaultCustomValuesMap, defaultOptionsValuesMap } from '../Editor/config';
 import { sortPanelsByGridLayout, panelsMergeToConfigs, updatePanelsInsertNewPanelToGlobal } from '../Panels/utils';
-import { DetailContext } from '../DetailContext';
+import { useGlobalState } from '../globalState';
 import './style.less';
 import './dark.antd.less';
 import './dark.less';
@@ -50,8 +50,8 @@ interface URLParam {
 
 export const dashboardTimeCacheKey = 'dashboard-timeRangePicker-value';
 
-export default function DetailV2() {
-  const { dispatch } = useContext(DetailContext);
+export default function DetailV2({ isPreview = false }: { isPreview?: boolean }) {
+  const [dashboardMeta, setDashboardMeta] = useGlobalState('dashboardMeta');
   const { search } = useLocation();
   const locationQuery = queryString.parse(search);
   const { viewMode } = locationQuery;
@@ -63,7 +63,6 @@ export default function DetailV2() {
   const { id } = useParams<URLParam>();
   const refreshRef = useRef<{ closeRefresh: Function }>();
   const { clusters } = useSelector<CommonRootState, CommonStoreState>((state) => state.common);
-  const [curCluster, setCurCluster] = useState<string>(localCluster || clusters[0]);
   const [dashboard, setDashboard] = useState<Dashboard>({
     create_by: '',
     favorite: 0,
@@ -73,6 +72,7 @@ export default function DetailV2() {
     update_at: 0,
     update_by: '',
   });
+  const [curCluster, setCurCluster] = useState<string>();
   const [variableConfig, setVariableConfig] = useState<IVariable[]>();
   const [variableConfigWithOptions, setVariableConfigWithOptions] = useState<IVariable[]>();
   const [dashboardLinks, setDashboardLinks] = useState<ILink[]>();
@@ -96,6 +96,10 @@ export default function DetailV2() {
     getDashboard(id).then((res) => {
       updateAtRef.current = res.update_at;
       setDashboard(res);
+      if (!curCluster) {
+        const dashboardConfigs: any = JSONParse(res.configs);
+        setCurCluster(dashboardConfigs.datasourceValue || localCluster || clusters[0]);
+      }
       if (res.configs) {
         const configs = JSONParse(res.configs);
         // TODO: configs 中可能没有 var 属性会导致 VariableConfig 报错
@@ -128,19 +132,14 @@ export default function DetailV2() {
     const dashboardConfigs: any = JSONParse(dashboard.configs);
     dashboardConfigs.var = value;
     // 更新变量配置
-    b && handleUpdateDashboardConfigs(id, { configs: JSON.stringify(dashboardConfigs) });
+    b && handleUpdateDashboardConfigs(dashboard.id, { configs: JSON.stringify(dashboardConfigs) });
     // 更新变量配置状态
     if (valueWithOptions) {
       setVariableConfigWithOptions(valueWithOptions);
-      if (dispatch) {
-        dispatch({
-          type: 'initDashboard',
-          payload: {
-            dashboardId: id,
-            variableConfigWithOptions: valueWithOptions,
-          },
-        });
-      }
+      setDashboardMeta({
+        dashboardId: _.toString(dashboard.id),
+        variableConfigWithOptions: valueWithOptions,
+      });
     }
   };
   const stopAutoRefresh = () => {
@@ -152,8 +151,8 @@ export default function DetailV2() {
   }, [id]);
 
   useInterval(() => {
-    if (import.meta.env.PROD) {
-      getDashboardPure(id).then((res) => {
+    if (import.meta.env.PROD && dashboard.id) {
+      getDashboardPure(_.toString(dashboard.id)).then((res) => {
         if (updateAtRef.current && res.update_at > updateAtRef.current) {
           if (editable) setEditable(false);
         } else {
@@ -163,27 +162,13 @@ export default function DetailV2() {
     }
   }, 2000);
 
-  if (viewMode === 'fullscreen') {
-    document.addEventListener("keydown", (e) => {
-      if (e.key == 'Escape') {
-        delete locationQuery.viewMode
-        history.replace({
-          pathname: location.pathname,
-          search: queryString.stringify(locationQuery),
-        });
-        // TODO: 解决大盘 layout resize 问题
-        setTimeout(() => {
-          window.dispatchEvent(new Event('resize'));
-        }, 500);
-        document.removeEventListener("keydown", () => { })
-      }
-    })
-  }
+  if (!curCluster) return null;
 
   return (
     <PageLayout
       customArea={
         <Title
+          isPreview={isPreview}
           curCluster={curCluster}
           clusters={clusters}
           setCurCluster={setCurCluster}
@@ -234,6 +219,7 @@ export default function DetailV2() {
                     },
                   ],
                   custom: defaultCustomValuesMap[type],
+                  options: defaultOptionsValuesMap[type],
                 },
               });
             }
@@ -250,22 +236,35 @@ export default function DetailV2() {
           )}
           <div className='dashboard-detail-content-header' style={{ display: viewMode != 'fullscreen' ? '' : 'none' }}>
             <div className='variable-area'>
-              {variableConfig && <VariableConfig onChange={handleVariableChange} value={variableConfig} cluster={curCluster} range={range} id={id} onOpenFire={stopAutoRefresh} />}
+              {variableConfig && (
+                <VariableConfig
+                  isPreview={isPreview}
+                  onChange={handleVariableChange}
+                  value={variableConfig}
+                  cluster={curCluster}
+                  range={range}
+                  id={id}
+                  onOpenFire={stopAutoRefresh}
+                />
+              )}
             </div>
-            <DashboardLinks
-              value={dashboardLinks}
-              onChange={(v) => {
-                const dashboardConfigs: any = JSONParse(dashboard.configs);
-                dashboardConfigs.links = v;
-                handleUpdateDashboardConfigs(id, {
-                  configs: JSON.stringify(dashboardConfigs),
-                });
-                setDashboardLinks(v);
-              }}
-            />
+            {!isPreview && (
+              <DashboardLinks
+                value={dashboardLinks}
+                onChange={(v) => {
+                  const dashboardConfigs: any = JSONParse(dashboard.configs);
+                  dashboardConfigs.links = v;
+                  handleUpdateDashboardConfigs(id, {
+                    configs: JSON.stringify(dashboardConfigs),
+                  });
+                  setDashboardLinks(v);
+                }}
+              />
+            )}
           </div>
           {variableConfigWithOptions && (
             <Panels
+              isPreview={isPreview}
               key={forceRenderKey}
               editable={editable}
               panels={panels}

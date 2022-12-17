@@ -19,10 +19,12 @@ export interface Dashboard {
   favorite: number;
   id: number;
   name: string;
+  ident?: string;
   tags: string;
   update_at: number;
   update_by: string;
   configs?: string;
+  public?: number;
 }
 
 export interface Group {

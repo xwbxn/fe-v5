@@ -28,6 +28,7 @@ import Pie from './Pie';
 import Hexbin from './Hexbin';
 import BarGauge from './BarGauge';
 import Text from './Text';
+import Gauge from './Gauge';
 import { IVariable } from '../../VariableConfig/definition';
 import { replaceExpressionVars } from '../../VariableConfig/constant';
 import Markdown from '../../Editor/Components/Markdown';
@@ -42,7 +43,6 @@ interface IProps {
   id?: string;
   time: IRawTimeRange;
   step: number | null;
-  type: string;
   values: IPanel;
   variableConfig?: IVariable[];
   isPreview?: boolean; // 是否是预览，预览中不显示编辑和分享
@@ -60,7 +60,7 @@ function replaceFieldWithVariable(dashboardId, value: string, variableConfig?: I
 }
 
 function index(props: IProps) {
-  const { themeMode, dashboardId, id, step, type, variableConfig, isPreview, onCloneClick, onShareClick, onEditClick, onDeleteClick } = props;
+  const { themeMode, dashboardId, id, step, variableConfig, isPreview, onCloneClick, onShareClick, onEditClick, onDeleteClick } = props;
   const [time, setTime] = useState(props.time);
   const [visible, setVisible] = useState(false);
   const values = _.cloneDeep(props.values);
@@ -77,6 +77,7 @@ function index(props: IProps) {
     inViewPort: isPreview || inViewPort,
     datasourceCate: values.datasourceCate || 'prometheus',
     datasourceName: values.datasourceName,
+    spanNulls: values.custom?.spanNulls,
   });
   const name = replaceFieldWithVariable(dashboardId, values.name, variableConfig);
   const description = replaceFieldWithVariable(dashboardId, values.description, variableConfig);
@@ -104,6 +105,7 @@ function index(props: IProps) {
     hexbin: () => <Hexbin {...subProps} themeMode={themeMode} />,
     barGauge: () => <BarGauge {...subProps} themeMode={themeMode} />,
     text: () => <Text {...subProps} />,
+    gauge: () => <Gauge {...subProps} themeMode={themeMode} />,
   };
 
   return (
@@ -233,10 +235,10 @@ function index(props: IProps) {
           </div>
         </div>
         <div className='renderer-body' style={{ height: values.name ? `calc(100% - 47px)` : '100%' }}>
-          {_.isEmpty(series) && type !== 'text' ? (
+          {_.isEmpty(series) && values.type !== 'text' ? (
             <div className='renderer-body-content-empty'>暂无数据</div>
           ) : (
-            <>{RendererCptMap[type] ? RendererCptMap[type]() : <div className='unknown-type'>{`无效的图表类型 ${type}`}</div>}</>
+            <>{RendererCptMap[values.type] ? RendererCptMap[values.type]() : <div className='unknown-type'>{`无效的图表类型 ${values.type}`}</div>}</>
           )}
         </div>
       </div>

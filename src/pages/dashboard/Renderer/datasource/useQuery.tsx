@@ -24,6 +24,8 @@ import replaceExpressionBracket from '../utils/replaceExpressionBracket';
 import { getSerieName } from './utils';
 import prometheusQuery from './prometheus';
 import elasticSearchQuery from './elasticSearch';
+import elasticSearchLogQuery from './elasticSearchLog';
+import aliyunSLS from './aliyunSLS';
 
 interface IProps {
   id?: string;
@@ -35,10 +37,11 @@ interface IProps {
   targets: ITarget[];
   variableConfig?: IVariable[];
   inViewPort?: boolean;
+  spanNulls?: boolean;
 }
 
 export default function usePrometheus(props: IProps) {
-  const { dashboardId, datasourceCate, time, step, targets, variableConfig, inViewPort } = props;
+  const { dashboardId, datasourceCate, time, step, targets, variableConfig, inViewPort, spanNulls, datasourceName } = props;
   const [series, setSeries] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const cachedVariableValues = _.map(variableConfig, (item) => {
@@ -48,6 +51,8 @@ export default function usePrometheus(props: IProps) {
   const fetchQueryMap = {
     prometheus: prometheusQuery,
     elasticsearch: elasticSearchQuery,
+    'elasticsearch-log': elasticSearchLogQuery,
+    'aliyun-sls': aliyunSLS,
   };
   const fetchData = () => {
     if (!datasourceCate) return;
@@ -68,7 +73,7 @@ export default function usePrometheus(props: IProps) {
     } else {
       flag.current = false;
     }
-  }, [JSON.stringify(targets), JSON.stringify(time), step, JSON.stringify(variableConfig), JSON.stringify(cachedVariableValues)]);
+  }, [JSON.stringify(targets), JSON.stringify(time), step, JSON.stringify(variableConfig), JSON.stringify(cachedVariableValues), spanNulls, datasourceName]);
 
   useEffect(() => {
     // 如果图表在可视区域内并且没有请求过数据，则请求数据

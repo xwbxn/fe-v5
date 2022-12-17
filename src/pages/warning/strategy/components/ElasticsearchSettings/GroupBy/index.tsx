@@ -9,14 +9,16 @@ import Terms from './Terms';
 import Histgram from './Histgram';
 
 interface IProps {
+  prefixField?: any;
   prefixFields?: string[]; // 前缀字段名
-  prefixNameField?: string[]; // 列表字段名
+  prefixNameField?: (string | number)[]; // 列表字段名
   cate: string;
   cluster: string[];
   index: string;
+  backgroundVisible?: boolean;
 }
 
-export default function index({ prefixFields = [], prefixNameField = [], cate, cluster, index }: IProps) {
+export default function index({ prefixField = {}, prefixFields = [], prefixNameField = [], cate, cluster, index, backgroundVisible = true }: IProps) {
   const [fieldsOptions, setFieldsOptions] = useState([]);
   const { run } = useDebounceFn(
     () => {
@@ -42,7 +44,7 @@ export default function index({ prefixFields = [], prefixNameField = [], cate, c
   }, [cate, _.join(cluster), index]);
 
   return (
-    <Form.List name={[...prefixNameField, 'query', 'group_by']}>
+    <Form.List {...prefixField} name={[...prefixNameField, 'group_by']}>
       {(fields, { add, remove }) => (
         <div>
           <div style={{ marginBottom: 8 }}>
@@ -51,7 +53,7 @@ export default function index({ prefixFields = [], prefixNameField = [], cate, c
               style={{ cursor: 'pointer' }}
               onClick={() => {
                 add({
-                  cate: 'filters',
+                  cate: 'terms',
                   params: [
                     {
                       alias: '',
@@ -62,31 +64,36 @@ export default function index({ prefixFields = [], prefixNameField = [], cate, c
               }}
             />
           </div>
-          {fields.map(({ key, name, ...restField }) => {
+          {fields.map((field) => {
             return (
-              <div key={key} style={{ marginBottom: 16 }}>
+              <div key={field.key} style={{ marginBottom: backgroundVisible ? 16 : 0 }}>
                 <Form.Item shouldUpdate noStyle>
                   {({ getFieldValue }) => {
-                    const cate = getFieldValue([...prefixFields, ...prefixNameField, 'query', 'group_by', name, 'cate']);
+                    const cate = getFieldValue([...prefixFields, ...prefixNameField, 'group_by', field.name, 'cate']);
                     return (
-                      <Row gutter={16}>
+                      <Row gutter={10} align='top'>
                         <Col flex='auto'>
                           <div
-                            style={{
-                              backgroundColor: '#FAFAFA',
-                              padding: 16,
-                            }}
+                            style={
+                              backgroundVisible
+                                ? {
+                                    backgroundColor: '#FAFAFA',
+                                    padding: 16,
+                                  }
+                                : {}
+                            }
                           >
-                            {cate === 'filters' && <Filters restField={restField} name={name} />}
-                            {cate === 'terms' && <Terms restField={restField} name={name} fieldsOptions={fieldsOptions} />}
-                            {cate === 'histgram' && <Histgram restField={restField} name={name} />}
+                            {cate === 'filters' && <Filters prefixField={field} />}
+                            {cate === 'terms' && <Terms prefixField={field} fieldsOptions={fieldsOptions} />}
+                            {cate === 'histgram' && <Histgram prefixField={field} />}
                           </div>
                         </Col>
                         <Col flex='40px' style={{ display: 'flex', alignItems: 'center' }}>
                           <div
                             onClick={() => {
-                              remove(name);
+                              remove(field.name);
                             }}
+                            style={{ height: 32, lineHeight: '32px' }}
                           >
                             <MinusCircleOutlined style={{ cursor: 'pointer' }} />
                           </div>

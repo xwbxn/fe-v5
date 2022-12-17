@@ -1,31 +1,51 @@
 import React, { useState, useEffect } from 'react';
 import { Form, Select } from 'antd';
-import { getCommonESClusters } from '@/services/common';
+import { getCommonESClusters, getCommonClusters, getCommonSLSClusters } from '@/services/common';
 
-export default function index() {
+export default function index(props: { cate: string; defaultDatasourceName?: string; name?: string | string[]; label?: React.ReactNode }) {
+  const { cate, defaultDatasourceName, name = 'datasourceName', label } = props;
   const [clusterList, setClusterList] = useState([]);
 
   useEffect(() => {
-    getCommonESClusters()
-      .then(({ dat }) => {
-        setClusterList(dat);
-      })
-      .catch(() => {
-        setClusterList([]);
-      });
-  }, []);
+    if (cate === 'elasticsearch' || cate === 'elasticsearch-log') {
+      getCommonESClusters()
+        .then(({ dat }) => {
+          setClusterList(dat);
+        })
+        .catch(() => {
+          setClusterList([]);
+        });
+    } else if (cate === 'aliyun-sls') {
+      getCommonSLSClusters()
+        .then(({ dat }) => {
+          setClusterList(dat);
+        })
+        .catch(() => {
+          setClusterList([]);
+        });
+    } else {
+      getCommonClusters()
+        .then(({ dat }) => {
+          setClusterList(dat);
+        })
+        .catch(() => {
+          setClusterList([]);
+        });
+    }
+  }, [cate]);
 
   return (
     <Form.Item
-      name='datasourceName'
+      label={label}
+      name={name}
       rules={[
         {
-          required: true,
+          required: cate !== 'prometheus',
+          message: '请选择数据源',
         },
       ]}
-      noStyle
     >
-      <Select placeholder='选择集群' style={{ minWidth: 70 }} dropdownMatchSelectWidth={false}>
+      <Select placeholder={cate !== 'prometheus' ? '选择数据源' : defaultDatasourceName} style={{ minWidth: 70 }} dropdownMatchSelectWidth={false}>
         {clusterList?.map((item) => (
           <Select.Option value={item} key={item}>
             {item}

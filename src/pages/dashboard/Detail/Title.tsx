@@ -41,10 +41,11 @@ interface IProps {
   setStep: (step: number | null) => void;
   refreshRef: any;
   onAddPanel: (type: string) => void;
+  isPreview: boolean;
 }
 
 export default function Title(props: IProps) {
-  const { curCluster, clusters, setCurCluster, dashboard, setDashboard, refresh, range, setRange, step, setStep, refreshRef, onAddPanel } = props;
+  const { curCluster, clusters, setCurCluster, dashboard, setDashboard, refresh, range, setRange, step, setStep, refreshRef, onAddPanel, isPreview } = props;
   const { id, name } = dashboard;
   const history = useHistory();
   const location = useLocation();
@@ -62,7 +63,7 @@ export default function Title(props: IProps) {
   return (
     <div className='dashboard-detail-header'>
       <div className='dashboard-detail-header-left'>
-        <RollbackOutlined className='back' onClick={() => history.push('/dashboards')} />
+        {!isPreview && <RollbackOutlined className='back' onClick={() => history.push('/dashboards')} />}
         {titleEditing ? (
           <Input
             ref={titleRef}
@@ -74,13 +75,15 @@ export default function Title(props: IProps) {
         ) : (
           <div className='title'>{dashboard.name}</div>
         )}
-        {!titleEditing ? (
-          <EditOutlined
-            className='edit'
-            onClick={() => {
-              setTitleEditing(!titleEditing);
-            }}
-          />
+        {/* {!titleEditing ? (
+          !isPreview ? (
+            <EditOutlined
+              className='edit'
+              onClick={() => {
+                setTitleEditing(!titleEditing);
+              }}
+            />
+          ) : null
         ) : (
           <>
             <Button size='small' style={{ marginRight: 5, marginLeft: 5 }} onClick={() => setTitleEditing(false)}>
@@ -96,59 +99,65 @@ export default function Title(props: IProps) {
               保存
             </Button>
           </>
-        )}
+        )} */}
       </div>
       <div className='dashboard-detail-header-right'>
         <Space>
           <div>
-            <Dropdown
-              trigger={['click']}
-              overlay={
-                <Menu>
-                  {_.map([{ type: 'row', name: '分组' }, ...visualizations], (item) => {
-                    return (
-                      <Menu.Item
-                        key={item.type}
-                        onClick={() => {
-                          onAddPanel(item.type);
-                        }}
-                      >
-                        {item.name}
-                      </Menu.Item>
-                    );
-                  })}
-                </Menu>
-              }
-            >
-              <Button type='primary' icon={<AddPanelIcon />}>
-                添加图表
-              </Button>
-            </Dropdown>
+            {!isPreview && (
+              <Dropdown
+                trigger={['click']}
+                overlay={
+                  <Menu>
+                    {_.map([{ type: 'row', name: '分组' }, ...visualizations], (item) => {
+                      return (
+                        <Menu.Item
+                          key={item.type}
+                          onClick={() => {
+                            onAddPanel(item.type);
+                          }}
+                        >
+                          {item.name}
+                        </Menu.Item>
+                      );
+                    })}
+                  </Menu>
+                }
+              >
+                <Button type='primary' icon={<AddPanelIcon />}>
+                  添加图表
+                </Button>
+              </Dropdown>
+            )}
           </div>
           <div style={{ display: 'flex', alignItems: 'center' }}>
             集群：
-            <Dropdown
-              overlay={
-                <Menu selectedKeys={[curCluster]}>
-                  {clusters.map((cluster) => (
-                    <Menu.Item
-                      key={cluster}
-                      onClick={(_) => {
-                        setCurCluster(cluster);
-                        localStorage.setItem('curCluster', cluster);
-                        refresh();
-                      }}
-                    >
-                      {cluster}
-                    </Menu.Item>
-                  ))}
-                </Menu>
-              }
-            >
-              <Button>
-                {curCluster} <DownOutlined />
-              </Button>
-            </Dropdown>
+            {isPreview ? (
+              curCluster
+            ) : (
+              <Dropdown
+                overlay={
+                  <Menu selectedKeys={[curCluster]}>
+                    {clusters.map((cluster) => (
+                      <Menu.Item
+                        key={cluster}
+                        onClick={(_) => {
+                          setCurCluster(cluster);
+                          localStorage.setItem('curCluster', cluster);
+                          refresh();
+                        }}
+                      >
+                        {cluster}
+                      </Menu.Item>
+                    ))}
+                  </Menu>
+                }
+              >
+                <Button>
+                  {curCluster} <DownOutlined />
+                </Button>
+              </Dropdown>
+            )}
           </div>
           <TimeRangePickerWithRefresh
             localKey={dashboardTimeCacheKey}
@@ -158,24 +167,26 @@ export default function Title(props: IProps) {
             onChange={setRange}
           />
           <Resolution onChange={(v) => setStep(v)} initialValue={step} />
-          <Button
-            onClick={() => {
-              const newQuery = _.omit(query, ['viewMode', 'themeMode']);
-              if (!viewMode) {
-                newQuery.viewMode = 'fullscreen';
-              }
-              history.replace({
-                pathname: location.pathname,
-                search: querystring.stringify(newQuery),
-              });
-              // TODO: 解决大盘 layout resize 问题
-              setTimeout(() => {
-                window.dispatchEvent(new Event('resize'));
-              }, 500);
-            }}
-          >
-            {viewMode === 'fullscreen' ? '关闭全屏' : '全屏'}
-          </Button>
+          {!isPreview && (
+            <Button
+              onClick={() => {
+                const newQuery = _.omit(query, ['viewMode', 'themeMode']);
+                if (!viewMode) {
+                  newQuery.viewMode = 'fullscreen';
+                }
+                history.replace({
+                  pathname: location.pathname,
+                  search: querystring.stringify(newQuery),
+                });
+                // TODO: 解决大盘 layout resize 问题
+                setTimeout(() => {
+                  window.dispatchEvent(new Event('resize'));
+                }, 500);
+              }}
+            >
+              {viewMode === 'fullscreen' ? '关闭全屏' : '全屏'}
+            </Button>
+          )}
           {viewMode === 'fullscreen' && (
             <Switch
               checkedChildren='dark'

@@ -28,6 +28,7 @@ export const getDashboards = function (id: number | string) {
 
 interface Dashboard {
   name: string;
+  ident?: string;
   tags: string;
   configs?: string;
 }
@@ -79,16 +80,24 @@ export const getDashboard = function (id: string | number) {
 };
 
 // 更新大盘 - 只能更新 name 和 tags
-export const updateDashboard = function (id: string | number, data: { name: string; tags: string }) {
+export const updateDashboard = function (id: string | number, data: { name: string; ident?: string; tags: string }) {
   return request(`/api/n9e/board/${id}`, {
     method: RequestMethod.Put,
     data,
-  });
+  }).then((res) => res.dat);
 };
 
 // 更新大盘 - 只能更新 configs
 export const updateDashboardConfigs = function (id: string | number, data: { configs: string }) {
   return request(`/api/n9e/board/${id}/configs`, {
+    method: RequestMethod.Put,
+    data,
+  });
+};
+
+// 更新大盘 - 只能更新 public
+export const updateDashboardPublic = function (id: string | number, data: { public: number }) {
+  return request(`/api/n9e/board/${id}/public`, {
     method: RequestMethod.Put,
     data,
   });

@@ -14,17 +14,19 @@
  * limitations under the License.
  *
  */
-import React from 'react';
+import React, { useEffect } from 'react';
 import _ from 'lodash';
 import { Form, Modal, Input, Select, message } from 'antd';
 import ModalHOC, { ModalWrapProps } from '@/components/ModalHOC';
-import { updateDashboard, createDashboard } from '@/services/dashboardV2';
+import { updateDashboard, createDashboard, updateDashboardConfigs, getDashboard } from '@/services/dashboardV2';
+import { JSONParse } from '../utils';
 
 interface IProps {
   mode: 'crate' | 'edit';
   initialValues?: any;
   busiId: number;
   refreshList: () => void;
+  clusters: string[];
 }
 
 const layout = {
@@ -41,33 +43,60 @@ const titleMap = {
 };
 
 function FormCpt(props: IProps & ModalWrapProps) {
-  const { mode, initialValues = {}, visible, busiId, refreshList, destroy } = props;
+  const { mode, initialValues = {}, visible, busiId, refreshList, destroy, clusters } = props;
   const [form] = Form.useForm();
   const handleOk = async () => {
-    const values = await form.validateFields();
+    try {
+      const values = await form.validateFields();
+      let result;
 
-    if (mode === 'edit') {
-      await updateDashboard(initialValues.id, {
-        name: values.name,
-        tags: _.join(values.tags, ' '),
-      });
-      message.success('编辑大盘成功');
-    } else if (mode === 'crate') {
-      await createDashboard(busiId, {
-        name: values.name,
-        tags: _.join(values.tags, ' '),
-        configs: JSON.stringify({
-          var: [],
-          panels: [],
-          version: '2.0.0',
-        }),
-      });
-      message.success('新建大盘成功');
+      if (mode === 'edit') {
+        result = await updateDashboard(initialValues.id, {
+          name: values.name,
+          ident: values.ident,
+          tags: _.join(values.tags, ' '),
+        });
+        message.success('编辑大盘成功');
+      } else if (mode === 'crate') {
+        result = await createDashboard(busiId, {
+          name: values.name,
+          ident: values.ident,
+          tags: _.join(values.tags, ' '),
+          configs: JSON.stringify({
+            var: [],
+            panels: [],
+            version: '2.0.0',
+          }),
+        });
+        message.success('新建大盘成功');
+      }
+      if (result) {
+        const configs = JSONParse(result.configs);
+        await updateDashboardConfigs(result.id, {
+          configs: JSON.stringify({
+            ...configs,
+            datasourceValue: values.datasourceValue,
+          }),
+        });
+      }
+      refreshList();
+      destroy();
+    } catch (error) {
+      message.error('操作失败');
     }
-
-    refreshList();
-    destroy();
   };
+
+  useEffect(() => {
+    if (initialValues.id) {
+      getDashboard(initialValues.id).then((res) => {
+        const configs = JSONParse(res.configs);
+        form.setFieldsValue({
+          datasourceValue: configs.datasourceValue,
+        });
+      });
+    }
+  }, [initialValues.id]);
+
   return (
     <Modal
       title={titleMap[mode]}
@@ -82,6 +111,9 @@ function FormCpt(props: IProps & ModalWrapProps) {
         <Form.Item
           label='大盘名称'
           name='name'
+          labelCol={{
+            span: 5,
+          }}
           wrapperCol={{
             span: 24,
           }}
@@ -95,6 +127,27 @@ function FormCpt(props: IProps & ModalWrapProps) {
           <Input />
         </Form.Item>
         <Form.Item
+          label='英文标识'
+          name='ident'
+          labelCol={{
+            span: 5,
+          }}
+          wrapperCol={{
+            span: 24,
+          }}
+          rules={[
+            {
+              pattern: /^[a-zA-Z0-9\-]*$/,
+              message: '请输入英文字母、数字、中划线',
+            },
+          ]}
+        >
+          <Input />
+        </Form.Item>
+        <Form.Item
+          labelCol={{
+            span: 5,
+          }}
           wrapperCol={{
             span: 24,
           }}
@@ -108,6 +161,26 @@ function FormCpt(props: IProps & ModalWrapProps) {
             }}
             placeholder={'请输入分类标签(请用回车分割)'}
           />
+        </Form.Item>
+        <Form.Item
+          labelCol={{
+            span: 5,
+          }}
+          wrapperCol={{
+            span: 24,
+          }}
+          label='默认关联数据源'
+          name='datasourceValue'
+        >
+          <Select>
+            {_.map(clusters, (item) => {
+              return (
+                <Select.Option key={item} value={item}>
+                  {item}
+                </Select.Option>
+              );
+            })}
+          </Select>
         </Form.Item>
         <Form.Item name='id' hidden>
           <Input />

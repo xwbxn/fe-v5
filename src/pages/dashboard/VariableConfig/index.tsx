@@ -19,7 +19,7 @@ import _ from 'lodash';
 import classNames from 'classnames';
 import { EditOutlined } from '@ant-design/icons';
 import { IRawTimeRange } from '@/components/TimeRangePicker';
-import { convertExpressionToQuery, replaceExpressionVars, getVaraiableSelected, setVaraiableSelected, stringToRegex } from './constant';
+import { convertExpressionToQuery, replaceExpressionVars, getVaraiableSelected, setVaraiableSelected, stringToRegex, filterOptionsByReg } from './constant';
 import { IVariable } from './definition';
 import DisplayItem from './DisplayItem';
 import EditItems from './EditItems';
@@ -33,6 +33,7 @@ interface IProps {
   range: IRawTimeRange;
   onChange: (data: IVariable[], needSave: boolean, options?: IVariable[]) => void;
   onOpenFire?: () => void;
+  isPreview?: boolean;
 }
 
 function includes(source, target) {
@@ -43,7 +44,7 @@ function includes(source, target) {
 }
 
 function index(props: IProps) {
-  const { id, cluster, editable = true, range, onChange, onOpenFire } = props;
+  const { id, cluster, editable = true, range, onChange, onOpenFire, isPreview = false } = props;
   const [editing, setEditing] = useState<boolean>(false);
   const [data, setData] = useState<IVariable[]>([]);
   const dataWithoutConstant = _.filter(data, (item) => item.type !== 'constant');
@@ -64,8 +65,8 @@ function index(props: IProps) {
             const item = _.cloneDeep(value[idx]);
             if ((item.type === 'query' || item.type === 'custom') && item.definition) {
               const definition = idx > 0 ? replaceExpressionVars(item.definition, result, idx, id) : item.definition;
-              const options = await convertExpressionToQuery(definition, range);
-              const regFilterOptions = _.filter(options, (i) => !!i && (!item.reg || !stringToRegex(item.reg) || (stringToRegex(item.reg) as RegExp).test(i)));
+              const options = await convertExpressionToQuery(definition, range, item, cluster);
+              const regFilterOptions = filterOptionsByReg(options, item.reg, result, idx, id);
               result[idx] = item;
               result[idx].fullDefinition = definition;
               result[idx].options = _.sortBy(regFilterOptions);
@@ -92,10 +93,10 @@ function index(props: IProps) {
             }
           }
           // 设置变量默认值，优先从 url 中获取，其次是 localStorage
-          result = _.map(result, (item) => {
+          result = _.map(_.compact(result), (item) => {
             return {
               ...item,
-              value: getVaraiableSelected(item.name, id),
+              value: getVaraiableSelected(item?.name, id),
             };
           });
           setData(result);
@@ -141,7 +142,7 @@ function index(props: IProps) {
             />
           );
         })}
-        {editable && (
+        {editable && !isPreview ? (
           <EditOutlined
             className='icon'
             onClick={() => {
@@ -149,7 +150,7 @@ function index(props: IProps) {
               onOpenFire && onOpenFire();
             }}
           />
-        )}
+        ) : null}
         {(data ? _.filter(data, (item) => item.type != 'constant')?.length === 0 : true) && editable && (
           <div
             className='add-variable-tips'
@@ -163,6 +164,7 @@ function index(props: IProps) {
         )}
       </div>
       <EditItems
+        cluster={cluster}
         visible={editing}
         setVisible={setEditing}
         value={value}

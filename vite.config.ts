@@ -120,13 +120,14 @@ export default defineConfig({
 
           // 下面是云眼的全局样式
           'primary-color': '#6C53B1',
+          'primary-background': '#F0ECF9',
           'disabled-color': 'rgba(0, 0, 0, 0.5)',
           'tabs-ink-bar-color': 'linear-gradient(to right, #9F4CFC, #0019F4 )',
           'font-size-base': '12px',
           'menu-item-font-size': '14px',
           'radio-button-checked-bg': '#EAE6F3',
           'form-item-margin-bottom': '18px',
-          'font-family': 'PingFangSC-Regular,microsoft yahei ui,microsoft yahei,simsun,"sans-serif"',
+          'font-family': 'Monda-Regular,PingFangSC-Regular,microsoft yahei ui,microsoft yahei,simsun,"sans-serif"',
           'text-color': '#262626',
           // 'component-background': '#f0f0f0',
           // 'modal-header-bg': '#fff',
