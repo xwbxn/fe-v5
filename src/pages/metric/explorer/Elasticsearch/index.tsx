@@ -34,7 +34,7 @@ export default function index(props: IProps) {
   const filtersArr: string[] = [];
   for (const [key, value] of params) {
     if (!['data_source_id', 'index_name', 'timestamp'].includes(key)) {
-      filtersArr.push(`${key}:${value}`);
+      filtersArr.push(`${key}:"${value}"`);
     }
   }
 
@@ -156,7 +156,8 @@ export default function index(props: IProps) {
           },
         });
 
-        // fetchData(1)
+        onIndexChange(params.get('index_name'));
+        fetchData(1);
       });
     }
   }, [params.get('data_source_id')]);
