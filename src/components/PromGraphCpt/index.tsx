@@ -18,11 +18,12 @@
  * 类似 prometheus graph 的组件
  */
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Input, Tabs, Button, Alert, Checkbox } from 'antd';
 import { GlobalOutlined } from '@ant-design/icons';
 import _ from 'lodash';
-import moment from 'moment';
-import { IRawTimeRange, parseRange } from '@/components/TimeRangePicker';
+import { IRawTimeRange } from '@/components/TimeRangePicker';
+import PromQueryBuilderModal from '@/components/PromQueryBuilder/PromQueryBuilderModal';
 import PromQLInput from '../PromQLInput';
 import Table from './Table';
 import Graph from './Graph';
@@ -47,6 +48,7 @@ interface IProps {
   globalOperates?: {
     enabled: boolean;
   };
+  headerExtra?: HTMLDivElement | null;
 }
 
 const TabPane = Tabs.TabPane;
@@ -69,6 +71,7 @@ export default function index(props: IProps) {
     globalOperates = {
       enabled: false,
     },
+    headerExtra,
   } = props;
   const [value, setValue] = useState<string | undefined>(promQL); // for promQLInput
   const [promql, setPromql] = useState<string | undefined>(promQL);
@@ -90,9 +93,6 @@ export default function index(props: IProps) {
       }
     } else {
       if (defaultTime?.start && defaultTime?.end) {
-        const parsedRange = parseRange(range);
-        const end = moment(parsedRange.end).unix();
-        setTimestamp(end);
         setRange(defaultTime);
       }
     }
@@ -109,7 +109,21 @@ export default function index(props: IProps) {
 
   return (
     <div className='prom-graph-container'>
-      {globalOperates.enabled && (
+      {headerExtra && globalOperates.enabled ? (
+        createPortal(
+          <div className='prom-graph-global-operate' style={{ marginTop: 5 }}>
+            <Checkbox
+              checked={completeEnabled}
+              onChange={(e) => {
+                setCompleteEnabled(e.target.checked);
+              }}
+            >
+              Enable autocomplete
+            </Checkbox>
+          </div>,
+          headerExtra,
+        )
+      ) : (
         <div className='prom-graph-global-operate'>
           <Checkbox
             checked={completeEnabled}
@@ -163,6 +177,27 @@ export default function index(props: IProps) {
             }}
           >
             <Button
+              onClick={() => {
+                PromQueryBuilderModal({
+                  range,
+                  datasourceValue: datasourceName || localStorage.getItem('curCluster') || 'DEFAULT',
+                  value,
+                  onChange: setValue,
+                });
+              }}
+            >
+              新手模式
+            </Button>
+          </span>
+          <span
+            className='ant-input-group-addon'
+            style={{
+              border: 0,
+              padding: '0 0 0 10px',
+              background: 'none',
+            }}
+          >
+            <Button
               type='primary'
               onClick={() => {
                 setRefreshFlag(_.uniqueId('refreshFlag_'));
@@ -201,13 +236,6 @@ export default function index(props: IProps) {
             timestamp={timestamp}
             setTimestamp={(val) => {
               setTimestamp(val);
-              if (val) {
-                onTimeChange &&
-                  onTimeChange({
-                    ...range,
-                    end: moment.unix(val),
-                  });
-              }
             }}
             refreshFlag={refreshFlag}
           />
