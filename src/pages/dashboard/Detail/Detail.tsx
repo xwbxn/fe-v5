@@ -54,10 +54,7 @@ export default function DetailV2({ isPreview = false }: { isPreview?: boolean })
   const [dashboardMeta, setDashboardMeta] = useGlobalState('dashboardMeta');
   const { search } = useLocation();
   const locationQuery = queryString.parse(search);
-  const { viewMode } = locationQuery;
-  if (_.get(locationQuery, '__cluster')) {
-    localStorage.setItem('curCluster', _.get(locationQuery, '__cluster'));
-  }
+  const urlCluster = _.get(locationQuery, '__cluster');
   const localCluster = localStorage.getItem('curCluster');
   const history = useHistory();
   const { id } = useParams<URLParam>();
@@ -98,7 +95,7 @@ export default function DetailV2({ isPreview = false }: { isPreview?: boolean })
       setDashboard(res);
       if (!curCluster) {
         const dashboardConfigs: any = JSONParse(res.configs);
-        setCurCluster(dashboardConfigs.datasourceValue || localCluster || clusters[0]);
+        setCurCluster(urlCluster || dashboardConfigs.datasourceValue || localCluster || clusters[0]);
       }
       if (res.configs) {
         const configs = JSONParse(res.configs);
@@ -234,7 +231,7 @@ export default function DetailV2({ isPreview = false }: { isPreview?: boolean })
               <Alert type='warning' message='大盘已经被别人修改，为避免相互覆盖，请刷新大盘查看最新配置和数据' />
             </div>
           )}
-          <div className='dashboard-detail-content-header' style={{ display: viewMode != 'fullscreen' ? '' : 'none' }}>
+          <div className='dashboard-detail-content-header'>
             <div className='variable-area'>
               {variableConfig && (
                 <VariableConfig
