@@ -119,7 +119,7 @@ export default defineConfig({
           // modify-end
 
           // 下面是云眼的全局样式
-          'primary-color': '#6C53B1',
+          'primary-color': '#0A4B9D',
           'primary-background': '#F0ECF9',
           'disabled-color': 'rgba(0, 0, 0, 0.5)',
           'tabs-ink-bar-color': 'linear-gradient(to right, #9F4CFC, #0019F4 )',
