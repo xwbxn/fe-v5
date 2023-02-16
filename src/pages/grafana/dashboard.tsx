@@ -20,7 +20,7 @@ export default function Dashboard() {
             document.title = res.name
         })
     }
-    
+
     useEffect(() => {
         refresh()
     }, [id])
@@ -28,15 +28,17 @@ export default function Dashboard() {
     const handleCallback = (e) => {
 
         if (e.data.source === 'grafana') {
-            updateDashboard(id, {
-                name: dashboardRef.current.name,
-                ident: dashboardRef.current.ident,
-                tags: dashboardRef.current.tags,
-                grafana_id: e.data.dashboard.id,
-                grafana_url: e.data.dashboard.url
-            }).then(() => {
-                refresh()
-            })
+            if (dashboard.name) {
+                updateDashboard(id, {
+                    name: dashboard.name,
+                    ident: dashboard.ident,
+                    tags: dashboard.tags,
+                    grafana_id: e.data.dashboard.id,
+                    grafana_url: e.data.dashboard.url
+                }).then(() => {
+                    refresh()
+                })
+            }
         }
     }
 
