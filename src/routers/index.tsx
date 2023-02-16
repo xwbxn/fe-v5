@@ -71,6 +71,9 @@ import RecordingRule from '@/pages/recordingRules';
 import RecordingRuleAdd from '@/pages/recordingRules/add';
 import RecordingRuleEdit from '@/pages/recordingRules/edit';
 import { dynamicPackages, Entry } from '@/utils';
+import Grafana from '@/pages/grafana';
+import GrafanaDashboard from '@/pages/grafana/dashboard'
+import HomePage from '@/pages/homePage';
 
 const Packages = dynamicPackages();
 let lazyRoutes = Packages.reduce((result: any, module: Entry) => {
@@ -180,6 +183,10 @@ export default function Content() {
         <Route exact path='/help/source' component={Datasource} />
         <Route exact path='/help/source/:action/:cate/:type' component={DatasourceAdd} />
         <Route exact path='/help/source/:action/:cate/:type/:id' component={DatasourceAdd} />
+
+        <Route exact path='/grafana' component={Grafana} />
+        <Route exact path='/grafana/dashboards/:id' component={GrafanaDashboard}></Route>
+        <Route exact path='/home' component={HomePage}></Route>
 
         {lazyRoutes.map((route, i) => (
           <RouteWithSubRoutes key={i} {...route} />

@@ -70,8 +70,12 @@ const SideMenu: FC = () => {
       label: t('监控对象'),
       children: [
         {
+          key: '/home',
+          label: t('监控总览')
+        },
+        {
           key: '/targets',
-          label: t('对象列表'),
+          label: t('监控管理'),
         },
       ],
     },
@@ -88,10 +92,14 @@ const SideMenu: FC = () => {
           key: '/object/explorer',
           label: t('快捷视图'),
         },
+        // {
+        //   key: '/dashboards',
+        //   label: t('监控大盘'),
+        // },
         {
-          key: '/dashboards',
-          label: t('监控大盘'),
-        },
+          key: '/grafana',
+          label: t('监控看板')
+        }
       ],
     },
     {
@@ -174,10 +182,10 @@ const SideMenu: FC = () => {
         //   key: '/help/contact',
         //   label:t('联系我们'),
         // },
-        {
-          key: '/help/migrate',
-          label: t('管理员迁移'),
-        },
+        // {
+        //   key: '/help/migrate',
+        //   label: t('管理员迁移'),
+        // },
         {
           key: '/help/servers',
           label: t('告警引擎'),
@@ -257,7 +265,8 @@ const SideMenu: FC = () => {
       location.pathname.startsWith('/chart/') ||
       location.pathname.startsWith('/dashboards/share/') ||
       location.pathname === '/callback' ||
-      location.pathname.indexOf('/polaris/screen') === 0
+      location.pathname.indexOf('/polaris/screen') === 0 ||
+      location.pathname.startsWith('/grafana/dashboard')
     ) {
       return true;
     }

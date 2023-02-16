@@ -152,7 +152,7 @@ const PageLayout: React.FC<IPageLayoutProps> = ({ icon, title, rightArea, introI
                 </a>
               )}
               {/* 整合版本关闭文档链接 */}
-              {import.meta.env.VITE_IS_COMMON_DS !== 'true' && (
+              {/*import.meta.env.VITE_IS_COMMON_DS !== 'true' && (
                 <div style={{ marginRight: 32, position: 'relative' }}>
                   <a target='_blank' href='http://n9e.flashcat.cloud'>
                     文档
@@ -171,7 +171,7 @@ const PageLayout: React.FC<IPageLayoutProps> = ({ icon, title, rightArea, introI
                     }}
                   />
                 </div>
-              )}
+                  )*/}
 
               {!hideCluster && (
                 <div style={{ marginRight: 20 }}>

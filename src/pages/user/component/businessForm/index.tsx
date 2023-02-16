@@ -30,7 +30,7 @@ const TeamForm = React.forwardRef<ReactNode, TeamProps>((props, ref) => {
   const [form] = Form.useForm();
   const [userTeam, setUserTeam] = useState<Team[]>([]);
   const [initialValues, setInitialValues] = useState({
-    label_enable: false,
+    label_enable: true,
     label_value: '',
     members: [{ perm_flag: true }],
     name: '',
@@ -97,6 +97,7 @@ const TeamForm = React.forwardRef<ReactNode, TeamProps>((props, ref) => {
             name='label_enable'
             valuePropName='checked'
             tooltip={{ title: '系统会自动把业务组的英文标识作为标签附到该业务组下辖监控对象的时序数据上', getPopupContainer: () => document.body }}
+            hidden
           >
             <Switch />
           </Form.Item>

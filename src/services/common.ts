@@ -145,3 +145,9 @@ export function getDatasourceNames(ids: number[]) {
     data: [],
   });
 }
+
+export function getOverview() {
+  return request(`api/n9e/busi-group/overview`, {
+    method: RequestMethod.Get
+  })
+}

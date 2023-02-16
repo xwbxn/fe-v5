@@ -9,6 +9,8 @@ import ColumnSelect from '@/components/ColumnSelect';
 import { getMonObjectList } from '@/services/monObjectManage';
 import { pageSizeOptions } from '@/components/Dantd/components/data-table/config';
 import clipboard from './clipboard';
+const { confirm } = Modal;
+
 
 enum OperateType {
   BindTag = 'bindTag',
@@ -275,6 +277,16 @@ export default function List(props: IProps) {
     refreshDeps: [JSON.stringify(curClusters), tableQueryContent, curBusiId, refreshFlag],
     defaultPageSize: 30,
   });
+  const downloadTarget = () => {
+    const currBusiGroup = JSON.parse(localStorage.getItem('curBusiItem') || "{}");
+    confirm({
+      title: `点击确定下载 ${currBusiGroup.name} 的探针`,
+      onOk: () => {
+        const down_url = `/target/download/${currBusiGroup.id}`
+        console.log('download:', down_url);
+      }
+    })
+  }
 
   return (
     <div>
@@ -301,27 +313,32 @@ export default function List(props: IProps) {
             }}
           />
         </Space>
-        <Dropdown
-          trigger={['click']}
-          overlay={
-            <Menu
-              onClick={({ key }) => {
-                setOperateType(key as OperateType);
-              }}
-            >
-              <Menu.Item key={OperateType.BindTag}>绑定标签</Menu.Item>
-              <Menu.Item key={OperateType.UnbindTag}>解绑标签</Menu.Item>
-              <Menu.Item key={OperateType.UpdateBusi}>修改业务组</Menu.Item>
-              <Menu.Item key={OperateType.RemoveBusi}>移出业务组</Menu.Item>
-              <Menu.Item key={OperateType.UpdateNote}>修改备注</Menu.Item>
-              <Menu.Item key={OperateType.Delete}>批量删除</Menu.Item>
-            </Menu>
-          }
-        >
-          <Button>
-            批量操作 <DownOutlined />
+        <Space>
+          <Dropdown
+            trigger={['click']}
+            overlay={
+              <Menu
+                onClick={({ key }) => {
+                  setOperateType(key as OperateType);
+                }}
+              >
+                <Menu.Item key={OperateType.BindTag}>绑定标签</Menu.Item>
+                <Menu.Item key={OperateType.UnbindTag}>解绑标签</Menu.Item>
+                <Menu.Item key={OperateType.UpdateBusi}>修改业务组</Menu.Item>
+                <Menu.Item key={OperateType.RemoveBusi}>移出业务组</Menu.Item>
+                <Menu.Item key={OperateType.UpdateNote}>修改备注</Menu.Item>
+                <Menu.Item key={OperateType.Delete}>批量删除</Menu.Item>
+              </Menu>
+            }
+          >
+            <Button>
+              批量操作 <DownOutlined />
+            </Button>
+          </Dropdown>
+          <Button onClick={downloadTarget}>
+            探针下载
           </Button>
-        </Dropdown>
+        </Space>
       </div>
       <Table
         rowKey='id'
