@@ -12,15 +12,14 @@ import { RequestMethod } from '@/store/common';
 import Overview from '../login/overview';
 
 interface Overview {
-    GroupId: number;
-    GroupName: string;
-    GroupLabel: string;
-    GroupMetrics: number;
-    Targets: number;
-    Emergency: number;
-    Warning: number;
-    Notice: number;
-    GroupTargets: number;
+    id: number;
+    name: string;
+    label: string;
+    metrics: number;
+    targets: number;
+    emergency: number;
+    warning: number;
+    notice: number;
 }
 
 enum Health {
@@ -36,7 +35,7 @@ export default function () {
 
     const fetchMetrics = async (groups) => {
         for (const group of groups) {
-            const res = await request(`/api/n9e/prometheus/api/v1/series?match[]={busigroup="${group.GroupLabel}"}`, {
+            const res = await request(`/api/n9e/prometheus/api/v1/series?match[]={busigroup="${group.label}"}`, {
                 method: RequestMethod.Get,
             })
             if (res.status === "success") {
@@ -63,9 +62,9 @@ export default function () {
     const columns: ColumnsType<Overview> = [
         {
             title: '业务组',
-            dataIndex: 'GroupId',
+            dataIndex: 'id',
             key: 'id',
-            render: (_, record) => <a>{record.GroupName}</a>,
+            render: (_, record) => <a>{record.name}</a>,
         },
         {
             title: '健康状态',
@@ -85,27 +84,27 @@ export default function () {
         },
         {
             title: "探针数量",
-            dataIndex: "Targets",
+            dataIndex: "targets",
             key: "targets"
         },
         {
             title: "指标数量",
-            dataIndex: "GroupMetrics",
+            dataIndex: "metrics",
             key: "metrics",
         },
         {
             title: '一级告警',
-            dataIndex: 'Emergency',
+            dataIndex: 'emergency',
             key: 'Emergency'
         },
         {
             title: '二级告警',
-            dataIndex: 'Warning',
+            dataIndex: 'warning',
             key: 'Warning'
         },
         {
             title: '三级告警',
-            dataIndex: 'Notice',
+            dataIndex: 'notice',
             key: 'Notice'
         }
     ];
