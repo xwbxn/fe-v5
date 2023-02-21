@@ -1,24 +1,22 @@
 import React, { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next';
 import PageLayout from '@/components/pageLayout'
-import { Input, Space, Table, Tag } from 'antd';
+import { Input, Table, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 
 import { AppstoreOutlined } from '@ant-design/icons';
 import './index.less'
-import { getBusiGroups, getOverview } from '@/services/common';
+import { getOverview } from '@/services/common';
 import request from '@/utils/request';
 import { RequestMethod } from '@/store/common';
-
-interface BusiGroup {
-    id: number;
-    name: string;
-    label_value: string;
-    GroupMetrics: number;
-}
+import Overview from '../login/overview';
 
 interface Overview {
     GroupId: number;
+    GroupName: string;
+    GroupLabel: string;
+    GroupMetrics: number;
+    Targets: number;
     Emergency: number;
     Warning: number;
     Notice: number;
@@ -33,13 +31,12 @@ enum Health {
 
 export default function () {
     const { t } = useTranslation();
-    const [busiGroups, setBusiGroups] = useState<BusiGroup[]>([]);
     const [overview, setOverview] = useState<Overview[]>([]);
     const { Search } = Input
 
     const fetchMetrics = async (groups) => {
         for (const group of groups) {
-            const res = await request(`/api/n9e/prometheus/api/v1/series?match[]={busigroup="${group.label_value}"}`, {
+            const res = await request(`/api/n9e/prometheus/api/v1/series?match[]={busigroup="${group.GroupLabel}"}`, {
                 method: RequestMethod.Get,
             })
             if (res.status === "success") {
@@ -52,27 +49,23 @@ export default function () {
     }
 
     useEffect(() => {
-        let overviewData, busiGroupData
+        let overviewData
         getOverview().then((res) => {
             overviewData = res.dat || [];
-            return getBusiGroups("")
-        }).then((res) => {
-            busiGroupData = res.dat || [];
-            setOverview(overviewData)
-            return fetchMetrics(busiGroupData)
+            return fetchMetrics(overviewData)
         }).then(data => {
-            setBusiGroups(data)
+            setOverview(data)
         })
     }, [])
 
 
 
-    const columns: ColumnsType<BusiGroup> = [
+    const columns: ColumnsType<Overview> = [
         {
             title: '业务组',
-            dataIndex: 'id',
+            dataIndex: 'GroupId',
             key: 'id',
-            render: (_, record) => <a>{record.name}</a>,
+            render: (_, record) => <a>{record.GroupName}</a>,
         },
         {
             title: '健康状态',
@@ -92,13 +85,8 @@ export default function () {
         },
         {
             title: "探针数量",
-            dataIndex: "id",
-            key: "targets",
-            render: ((value) => {
-                const bg = overview.find(v => v.GroupId === value)
-                return bg?.GroupTargets || 0
-
-            })
+            dataIndex: "Targets",
+            key: "targets"
         },
         {
             title: "指标数量",
@@ -107,31 +95,18 @@ export default function () {
         },
         {
             title: '一级告警',
-            dataIndex: 'id',
-            key: 'Emergency',
-            render: ((value) => {
-                const bg = overview.find(v => v.GroupId === value)
-                return bg?.Emergency || 0
-
-            })
+            dataIndex: 'Emergency',
+            key: 'Emergency'
         },
         {
             title: '二级告警',
-            dataIndex: 'id',
-            key: 'Warning',
-            render: ((value) => {
-                const bg = overview.find(v => v.GroupId === value)
-                return bg?.Warning || 0
-            })
+            dataIndex: 'Warning',
+            key: 'Warning'
         },
         {
             title: '三级告警',
-            dataIndex: 'id',
-            key: 'Notice',
-            render: ((value) => {
-                const bg = overview.find(v => v.GroupId === value)
-                return bg?.Notice || 0
-            })
+            dataIndex: 'Notice',
+            key: 'Notice'
         }
     ];
 
@@ -142,7 +117,7 @@ export default function () {
                     <Search placeholder='请输入关键字' style={{ width: 300 }}></Search>
                 </div>
                 <div className='home-content'>
-                    <Table columns={columns} dataSource={busiGroups} pagination={{ position: ['bottomCenter'] }}></Table>
+                    <Table columns={columns} dataSource={overview} pagination={{ position: ['bottomCenter'] }}></Table>
                 </div>
             </div>
         </PageLayout>
