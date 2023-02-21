@@ -10,7 +10,7 @@ interface URLParam {
 
 export default function Dashboard() {
     const [dashboard, setDashboard] = useState<any>({})
-    const dashboardRef = useRef()
+    const dashboardRef = useRef<any>()
     const { id } = useParams<URLParam>()
 
     const refresh = () => {
@@ -26,13 +26,12 @@ export default function Dashboard() {
     }, [id])
 
     const handleCallback = (e) => {
-        console.log(e);        
         if (e.data.source === 'grafana') {
-            if (dashboard.name) {
+            if (dashboardRef.current !== undefined) {
                 updateDashboard(id, {
-                    name: dashboard.name,
-                    ident: dashboard.ident,
-                    tags: dashboard.tags,
+                    name: dashboardRef.current.name,
+                    ident: dashboardRef.current.ident,
+                    tags: dashboardRef.current.tags,
                     grafana_id: e.data.dashboard.id,
                     grafana_url: e.data.dashboard.url
                 }).then(() => {
@@ -44,11 +43,14 @@ export default function Dashboard() {
 
     useEffectOnce(() => {
         window.addEventListener('message', handleCallback, false)
+        return () => {
+            window.removeEventListener('message', handleCallback, false)
+        }
     })
 
     if (dashboard.grafana_id && dashboard.grafana_id !== 0) {
         return (
-            <iframe src={`/grafana-dashboard${dashboard.grafana_url}?bid=${id}`} style={{ width: "100%", height: "100%" }}></iframe>
+            <iframe src={`${dashboard.grafana_url}?bid=${id}`} style={{ width: "100%", height: "100%" }}></iframe>
         )
     } else {
         //new
