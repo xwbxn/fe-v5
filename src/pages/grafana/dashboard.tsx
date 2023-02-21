@@ -26,7 +26,7 @@ export default function Dashboard() {
     }, [id])
 
     const handleCallback = (e) => {
-
+        console.log(e);        
         if (e.data.source === 'grafana') {
             if (dashboard.name) {
                 updateDashboard(id, {
