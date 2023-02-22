@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import PageLayout from '@/components/pageLayout'
 import { Input, Table, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import _ from 'lodash';
 
 import { AppstoreOutlined } from '@ant-design/icons';
 import './index.less'
@@ -39,9 +40,12 @@ export default function () {
                 method: RequestMethod.Get,
             })
             if (res.status === "success") {
-                group.GroupMetrics = res.data.length
+                const rows = _.groupBy(res.data, item => {
+                    return item.__name__ 
+                })
+                group.metrics = Object.keys(rows).length
             } else {
-                group.GroupMetrics = 0
+                group.metrics = 0
             }
         }
         return groups
