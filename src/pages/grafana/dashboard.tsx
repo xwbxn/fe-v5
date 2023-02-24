@@ -36,6 +36,7 @@ export default function Dashboard() {
                     grafana_url: e.data.dashboard.url
                 }).then(() => {
                     refresh()
+                    console.log(`dashboard ${id} updated`)
                 })
             }
         }
@@ -50,12 +51,12 @@ export default function Dashboard() {
 
     if (dashboard.grafana_id && dashboard.grafana_id !== 0) {
         return (
-            <iframe src={`${dashboard.grafana_url}?bid=${id}`} style={{ width: "100%", height: "100%" }}></iframe>
+            <iframe src={`${dashboard.grafana_url}`} style={{ width: "100%", height: "100%" }}></iframe>
         )
     } else {
         //new
         return (
-            <iframe src={`/grafana-dashboard/dashboard/new?bid=${id}`} style={{ width: "100%", height: "100%" }}></iframe>
+            <iframe src={`/grafana/dashboard/new`} style={{ width: "100%", height: "100%" }}></iframe>
         )
     }
 }

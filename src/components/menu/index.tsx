@@ -92,13 +92,9 @@ const SideMenu: FC = () => {
           key: '/object/explorer',
           label: t('快捷视图'),
         },
-        // {
-        //   key: '/dashboards',
-        //   label: t('监控大盘'),
-        // },
         {
-          key: '/grafana',
-          label: t('监控看板')
+          key: '/dashboards',
+          label: t('监控大盘'),
         }
       ],
     },
@@ -266,7 +262,7 @@ const SideMenu: FC = () => {
       location.pathname.startsWith('/dashboards/share/') ||
       location.pathname === '/callback' ||
       location.pathname.indexOf('/polaris/screen') === 0 ||
-      location.pathname.startsWith('/grafana/dashboard')
+      /\/dashboards\/\d+/.test(location.pathname)
     ) {
       return true;
     }

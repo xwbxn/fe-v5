@@ -137,10 +137,10 @@ export default function Content() {
         <Route path='/user-groups' component={Groups} />
         <Route path='/account/profile/:tab' component={Profile} />
 
-        <Route path='/dashboard/:id' exact component={DashboardDetail} />
+        {/* <Route path='/dashboard/:id' exact component={DashboardDetail} />
         <Route path='/dashboards/:id' exact component={DashboardDetail} />
         <Route path='/dashboards/share/:id' component={DashboardShare} />
-        <Route path='/dashboards' component={Dashboard} />
+        <Route path='/dashboards' component={Dashboard} /> */}
         <Route path='/chart/:ids' component={Chart} />
         <Route path='/indicator' component={IndicatorPage} />
 
@@ -184,8 +184,8 @@ export default function Content() {
         <Route exact path='/help/source/:action/:cate/:type' component={DatasourceAdd} />
         <Route exact path='/help/source/:action/:cate/:type/:id' component={DatasourceAdd} />
 
-        <Route exact path='/grafana' component={Grafana} />
-        <Route exact path='/grafana/dashboards/:id' component={GrafanaDashboard}></Route>
+        <Route exact path='/dashboards' component={Grafana} />
+        <Route exact path='/dashboards/:id' component={GrafanaDashboard}></Route>
         <Route exact path='/home' component={HomePage}></Route>
 
         {lazyRoutes.map((route, i) => (

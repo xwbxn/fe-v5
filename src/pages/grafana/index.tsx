@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useHistory, Link, useLocation } from 'react-router-dom';
 import { Table, Tag, Modal, Switch, message } from 'antd';
 import { FundViewOutlined } from '@ant-design/icons';
@@ -72,7 +72,7 @@ export default function index(props) {
                   className: 'name-column',
                   render: (text: string, record: DashboardType) => {
                     return (
-                      <Link target="_blank" to={`/grafana/dashboards/${record.id}`}>{text}</Link>
+                      <Link target="_blank" to={`/dashboards/${record.id}`}>{text}</Link>
                     );
                   },
                 },
