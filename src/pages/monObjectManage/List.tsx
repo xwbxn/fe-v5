@@ -95,7 +95,7 @@ export default function List(props: IProps) {
     },
     {
       title: 'IP地址',
-      dataindex: 'ip_address',
+      dataIndex: 'ip_address',
       ellipsis: {
         showTitle: false,
       },
