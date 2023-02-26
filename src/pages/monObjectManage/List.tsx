@@ -94,6 +94,13 @@ export default function List(props: IProps) {
       dataIndex: 'ident',
     },
     {
+      title: 'IP地址',
+      dataindex: 'ip_address',
+      ellipsis: {
+        showTitle: false,
+      },
+    },
+    {
       title: '标签',
       dataIndex: 'tags',
       ellipsis: {
