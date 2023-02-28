@@ -192,7 +192,7 @@ export default function Content() {
           <RouteWithSubRoutes key={i} {...route} />
         ))}
         <Route path='/' exact>
-          <Redirect to='/metric/explorer' />
+          <Redirect to='/home' />
         </Route>
         <Route path='/403' component={Page403} />
         <Route path='/404' component={NotFound} />

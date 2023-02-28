@@ -71,7 +71,7 @@ export default function Login() {
     });
 
     if (!err) {
-      history.push(redirect || '/metric/explorer');
+      history.push(redirect || '/home');
     }
   };
 
