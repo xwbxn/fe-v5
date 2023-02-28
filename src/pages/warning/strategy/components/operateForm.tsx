@@ -33,6 +33,7 @@ import AbnormalDetection from './AbnormalDetection';
 import OldElasticsearchSettings from './ElasticsearchSettings/Old';
 import ElasticsearchSettings from './ElasticsearchSettings';
 import AliyunSLSSettings from './AliyunSLSSettings';
+import ClickHouseSettings from './ClickHouseSettings';
 import CateSelect from './CateSelect';
 import ClusterSelect, { ClusterAll } from './ClusterSelect';
 import { parseValues, stringifyValues } from './utils';
@@ -159,15 +160,15 @@ const operateForm: React.FC<Props> = ({ type, detail = {} }) => {
             });
             return false;
           }
-        } else if (values.cate === 'elasticsearch' || values.cate === 'aliyun-sls') {
+        } else if (values.cate === 'elasticsearch' || values.cate === 'aliyun-sls' || values.cate === 'ck') {
           values = stringifyValues(values);
         }
         const callbacks = values.callbacks.map((item) => item.url);
         const data = {
-          ...values,
-          enable_days_of_week: values.effective_time.map((item) => item.enable_days_of_week),
-          enable_stime: values.effective_time.map((item) => item.enable_stime.format('HH:mm')),
-          enable_etime: values.effective_time.map((item) => item.enable_etime.format('HH:mm')),
+          ..._.omit(values, ['effective_time']),
+          enable_days_of_weeks: values.effective_time.map((item) => item.enable_days_of_week),
+          enable_stimes: values.effective_time.map((item) => item.enable_stime.format('HH:mm')),
+          enable_etimes: values.effective_time.map((item) => item.enable_etime.format('HH:mm')),
           disabled: !values.enable_status ? 1 : 0,
           notify_recovered: values.notify_recovered ? 1 : 0,
           enable_in_bg: values.enable_in_bg ? 1 : 0,
@@ -226,11 +227,11 @@ const operateForm: React.FC<Props> = ({ type, detail = {} }) => {
           ...parseValues(detail),
           cluster: detail.cluster ? detail.cluster.split(' ') : ['$all'], // 生效集群
           enable_in_bg: detail?.enable_in_bg === 1,
-          effective_time: detail?.enable_stime
-            ? detail?.enable_stime.map((item, index) => ({
-                enable_stime: moment(detail.enable_stime[index], 'HH:mm'),
-                enable_etime: moment(detail.enable_etime[index], 'HH:mm'),
-                enable_days_of_week: detail.enable_days_of_week[index],
+          effective_time: detail?.enable_etimes
+            ? detail?.enable_etimes.map((item, index) => ({
+                enable_stime: moment(detail.enable_stimes[index], 'HH:mm'),
+                enable_etime: moment(detail.enable_etimes[index], 'HH:mm'),
+                enable_days_of_week: detail.enable_days_of_weeks[index],
               }))
             : [
                 {
@@ -399,6 +400,9 @@ const operateForm: React.FC<Props> = ({ type, detail = {} }) => {
                 if (cate === 'aliyun-sls') {
                   return <AliyunSLSSettings form={form} />;
                 }
+                if (cate === 'ck') {
+                  return <ClickHouseSettings form={form} />;
+                }
               }}
             </Form.Item>
             <Row gutter={16}>
@@ -413,7 +417,7 @@ const operateForm: React.FC<Props> = ({ type, detail = {} }) => {
                         tooltip={
                           cate === 'prometheus'
                             ? t(`每隔${form.getFieldValue('prom_eval_interval')}秒，把PromQL作为查询条件，去查询后端存储，如果查到了数据就表示当次有监控数据触发了规则`)
-                            : '每隔15秒，去查询后端存储'
+                            : `每隔${form.getFieldValue('prom_eval_interval')}秒，去查询后端存储`
                         }
                         initialValue={60}
                         rules={[
