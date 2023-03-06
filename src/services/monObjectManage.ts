@@ -72,3 +72,11 @@ export function deleteTargets(data) {
     data,
   });
 }
+
+// 获取探针下载连接
+export function getTargetInstallUrl(params) {
+  return request(`/api/n9e/categraf/getstart`, {
+    method: RequestMethod.Get,
+    params
+  })
+}

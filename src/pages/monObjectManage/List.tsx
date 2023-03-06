@@ -6,10 +6,10 @@ import _ from 'lodash';
 import { useTranslation } from 'react-i18next';
 import { BusiGroupItem } from '@/store/commonInterface';
 import ColumnSelect from '@/components/ColumnSelect';
-import { getMonObjectList } from '@/services/monObjectManage';
+import { getMonObjectList, getTargetInstallUrl } from '@/services/monObjectManage';
 import { pageSizeOptions } from '@/components/Dantd/components/data-table/config';
 import clipboard from './clipboard';
-const { confirm } = Modal;
+const { info } = Modal;
 
 
 enum OperateType {
@@ -55,6 +55,9 @@ export default function List(props: IProps) {
   const [searchVal, setSearchVal] = useState('');
   const [tableQueryContent, setTableQueryContent] = useState<string>('');
   const [curClusters, setCurClusters] = useState<string[]>([]);
+  const [downloadLink, setDownloadLink] = useState<string>("")
+  const [showDownload, setShowDownload] = useState<boolean>(false)
+
   const columns = [
     {
       title: '集群',
@@ -286,12 +289,12 @@ export default function List(props: IProps) {
   });
   const downloadTarget = () => {
     const currBusiGroup = JSON.parse(localStorage.getItem('curBusiItem') || "{}");
-    confirm({
-      title: `点击确定下载 ${currBusiGroup.name} 的探针`,
-      onOk: () => {
-        const down_url = `/target/download/${currBusiGroup.id}`
-        console.log('download:', down_url);
-      }
+    getTargetInstallUrl({ busigroup: currBusiGroup.label_value }).then(res => {
+      info({
+        title: `复制脚本至服务器使用管理员权限执行,安装 ${currBusiGroup.name} 的探针`,
+        content: res.dat.url + "|sh",
+        width: 600
+      })
     })
   }
 
@@ -367,6 +370,9 @@ export default function List(props: IProps) {
           pageSizeOptions: pageSizeOptions,
         }}
       />
+      <Modal title="请将下面脚本复制到服务器上执行，即可安装探针" visible={showDownload}>
+
+      </Modal>
     </div>
   );
 }
