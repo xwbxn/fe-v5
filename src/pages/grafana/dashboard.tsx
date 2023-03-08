@@ -49,7 +49,7 @@ export default function Dashboard() {
         }
     })
 
-    if (dashboard.grafana_id && dashboard.grafana_id !== 0) {
+    if (dashboard.grafana_url !== "") {
         return (
             <iframe src={`${dashboard.grafana_url}`} style={{ width: "100%", height: "100%" }}></iframe>
         )
