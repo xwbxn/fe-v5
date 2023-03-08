@@ -145,7 +145,13 @@ function FormCpt(props: IProps & ModalWrapProps) {
         <Form.Item name="grafana_id" hidden>
           <Input></Input>
         </Form.Item>
-        <Form.Item name="grafana_url" hidden>
+        <Form.Item name="grafana_url" label='看板链接'
+          labelCol={{
+            span: 5,
+          }}
+          wrapperCol={{
+            span: 24,
+          }}>
           <Input></Input>
         </Form.Item>
       </Form>
