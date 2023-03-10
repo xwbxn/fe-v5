@@ -3,4 +3,5 @@ export interface Dashboard {
     tags: string;
     uid: string;
     title: string;
+    url: string;
   }
