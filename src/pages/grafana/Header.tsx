@@ -1,24 +1,42 @@
 import React from 'react';
 import { Input, Button, Dropdown, Modal, Space, message } from 'antd';
 import { SearchOutlined, DownOutlined } from '@ant-design/icons';
-import { useSelector } from 'react-redux';
-import { removeDashboards } from '@/services/grafanaDashboard';
-import { RootState as CommonRootState } from '@/store/common';
-import { CommonStoreState } from '@/store/commonInterface';
 import RefreshIcon from '@/components/RefreshIcon';
-import FormCpt from './Form';
+import { createFolder, getFolder } from '@/services/grafana';
 
 interface IProps {
-  busiId: number;
-  selectRowKeys: any[];
+  busiGroup: string;
   refreshList: () => void;
   searchVal: string;
   onSearchChange: (val) => void;
 }
 
 export default function Header(props: IProps) {
-  const { clusters } = useSelector<CommonRootState, CommonStoreState>((state) => state.common);
-  const { busiId, selectRowKeys, refreshList, searchVal, onSearchChange } = props;
+  const { busiGroup, refreshList, searchVal, onSearchChange } = props;
+
+  const checkOrCreateFolder = async (busiGroup: string) => {
+    let res = await getFolder(busiGroup)
+    if (!res.success && res.dat.status == 404) {
+      res = await createFolder({ uid: busiGroup, title: busiGroup })
+      if (!res.success) {
+        message.error('创建目录失败')
+        return false
+      }
+    }
+    return true
+  }
+
+  const newGrafana = async (busiGroup: string) => {
+    if (await checkOrCreateFolder(busiGroup)) {
+      window.open(`/grafana/dashboard/new?folderUid=${busiGroup}`, "_blank")
+    }
+  }
+
+  const importGrafana = async (busiGroup: string) => {
+    if (await checkOrCreateFolder(busiGroup)) {
+      window.open(`/grafana/dashboard/import?folderUid=${busiGroup}`, "_blank")
+    }
+  }
 
   return (
     <>
@@ -41,63 +59,30 @@ export default function Header(props: IProps) {
             />
           </div>
         </Space>
-        <div className='table-handle-buttons'>
-          <Button
-            type='primary'
-            onClick={() => {
-              FormCpt({
-                mode: 'create',
-                busiId,
-                refreshList,
-                clusters,
-              });
-            }}
-            ghost
-          >
-            新建大盘
-          </Button>
-          <div className={'table-more-options'}>
-            <Dropdown
-              overlay={
-                <ul className='ant-dropdown-menu'>
-                  <li
-                    className='ant-dropdown-menu-item'
-                    onClick={() => {
-                      if (selectRowKeys.length) {
-                        Modal.confirm({
-                          title: '是否批量删除大盘?',
-                          onOk: async () => {
-                            removeDashboards(selectRowKeys).then(() => {
-                              message.success('批量删除大盘成功');
-                            });
-                            // TODO: 删除完后立马刷新数据有时候不是实时的，这里暂时间隔0.5s后再刷新列表
-                            setTimeout(() => {
-                              refreshList();
-                            }, 500);
-                          },
-                        });
-                      } else {
-                        message.warning('未选择任何大盘');
-                      }
-                    }}
-                  >
-                    <span>批量删除大盘</span>
-                  </li>
-                </ul>
-              }
-              trigger={['click']}
+        <Space>
+          <div className='table-handle-buttons'>
+            <Button
+              type='primary'
+              onClick={() => {
+                newGrafana(busiGroup)
+              }}
+              ghost
             >
-              <Button onClick={(e) => e.stopPropagation()}>
-                更多操作
-                <DownOutlined
-                  style={{
-                    marginLeft: 2,
-                  }}
-                />
-              </Button>
-            </Dropdown>
+              新建大盘
+            </Button>
           </div>
-        </div>
+          <div className='table-handle-buttons'>
+            <Button
+              type='primary'
+              onClick={() => {
+                importGrafana(busiGroup)
+              }}
+              ghost
+            >
+              导入大盘
+            </Button>
+          </div>
+        </Space>
       </div>
     </>
   );

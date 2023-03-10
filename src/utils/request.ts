@@ -31,7 +31,10 @@ request.interceptors.request.use((url, options) => {
   let headers = {
     ...options.headers,
   };
-  headers['Authorization'] = `Bearer ${localStorage.getItem('access_token') || ''}`;
+  //grafana，使用authproxy
+  if (!url.startsWith("/grafana")) {
+    headers['Authorization'] = `Bearer ${localStorage.getItem('access_token') || ''}`;
+  }
   if (!headers['X-Cluster']) {
     headers['X-Cluster'] = localStorage.getItem('curCluster') || '';
   }
@@ -48,6 +51,18 @@ request.interceptors.request.use((url, options) => {
 request.interceptors.response.use(
   async (response, options) => {
     const { status } = response;
+
+    if (response.url.includes('/grafana/api')) {
+      if (status == 200) {
+        return response.clone().json().then(data => {
+          return { dat: data, success: true }
+        })
+      } else {
+        return new Promise<any>((resolve, reject) => {
+          resolve({ dat: response, success: false })
+        })
+      }
+    }
 
     if (status === 200) {
       return response
@@ -130,16 +145,16 @@ request.interceptors.response.use(
       } else {
         localStorage.getItem('refresh_token')
           ? UpdateAccessToken().then((res) => {
-              console.log('401 err', res);
-              if (res.err) {
-                location.href = `/login${location.pathname != '/' ? '?redirect=' + location.pathname + location.search : ''}`;
-              } else {
-                const { access_token, refresh_token } = res.dat;
-                localStorage.setItem('access_token', access_token);
-                localStorage.setItem('refresh_token', refresh_token);
-                location.href = `${location.pathname}${location.search}`;
-              }
-            })
+            console.log('401 err', res);
+            if (res.err) {
+              location.href = `/login${location.pathname != '/' ? '?redirect=' + location.pathname + location.search : ''}`;
+            } else {
+              const { access_token, refresh_token } = res.dat;
+              localStorage.setItem('access_token', access_token);
+              localStorage.setItem('refresh_token', refresh_token);
+              location.href = `${location.pathname}${location.search}`;
+            }
+          })
           : (location.href = `/login${location.pathname != '/' ? '?redirect=' + location.pathname + location.search : ''}`);
       }
       // } else if (status === 404) {

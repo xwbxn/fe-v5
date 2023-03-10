@@ -2,11 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useHistory, Link, useLocation } from 'react-router-dom';
 import { Table, Tag, Modal, Switch, message } from 'antd';
 import { FundViewOutlined } from '@ant-design/icons';
-import moment from 'moment';
 import _ from 'lodash';
 import { useSelector } from 'react-redux';
-import { Dashboard as DashboardType } from '@/store/dashboardInterface';
-import { getDashboards, removeDashboards } from '@/services/grafanaDashboard';
+import { Dashboard as DashboardType } from '@/store/grafanaInterface';
+import { removeDashboards } from '@/services/grafanaDashboard';
+import { getFolder, getDashboards, deleteDashboard } from '@/services/grafana';
 import PageLayout from '@/components/pageLayout';
 import LeftTree from '@/components/LeftTree';
 import BlankBusinessPlaceholder from '@/components/BlankBusinessPlaceholder';
@@ -22,7 +22,7 @@ export default function index(props) {
   const { clusters } = useSelector<CommonRootState, CommonStoreState>((state) => state.common);
   const history = useHistory();
   const location = useLocation();
-  const [busiId, setBusiId] = useState<number>();
+  const [busiGroup, setBusiGroup] = useState<string>();
   const [list, setList] = useState([]);
   const [selectRowKeys, setSelectRowKeys] = useState<number[]>([]);
   const [refreshKey, setRefreshKey] = useState(_.uniqueId('refreshKey_'));
@@ -30,20 +30,26 @@ export default function index(props) {
   const [pageSize, setPageSize] = useState<number>(_.toNumber(localStorage.getItem(DASHBOARD_PAGESIZE_KEY)) || 10);
 
   useEffect(() => {
-    if (props.match.params.busiId) {
-      setBusiId(props.match.params.busiId)
+    if (props.match.params.busiGroup) {
+      setBusiGroup(props.match.params.busiGroup)
     }
 
-    if (busiId) {
-      getDashboards(busiId).then((res) => {
-        setList(res);
-      });
+    if (busiGroup) {
+      getFolder(busiGroup).then(res => {
+        if (res.success) {
+          return getDashboards(res.dat.id)
+        } else {
+          setList([])
+        }
+      }).then((res) => {
+        setList(res.dat)
+      })
     }
-  }, [busiId, refreshKey]);
+  }, [busiGroup, refreshKey]);
 
   const data = _.filter(list, (item) => {
     if (searchVal) {
-      return _.includes(item.name.toLowerCase(), searchVal.toLowerCase()) || item.tags.toLowerCase().includes(searchVal.toLowerCase());
+      return _.includes(item.title.toLowerCase(), searchVal.toLowerCase()) || item.tags.join().toLowerCase().includes(searchVal.toLowerCase());
     }
     return true;
   });
@@ -51,12 +57,11 @@ export default function index(props) {
   return (
     <PageLayout title='监控大盘' icon={<FundViewOutlined />} hideCluster={true}>
       <div style={{ display: 'flex' }}>
-        <LeftTree busiGroup={{ onChange: (id) => setBusiId(id) }}></LeftTree>
-        {busiId ? (
+        <LeftTree busiGroup={{ onChange: (id, item) => setBusiGroup(item.label_value) }}></LeftTree>
+        {busiGroup ? (
           <div className='dashboards-v2'>
             <Header
-              busiId={busiId}
-              selectRowKeys={selectRowKeys}
+              busiGroup={busiGroup}
               refreshList={() => {
                 setRefreshKey(_.uniqueId('refreshKey_'));
               }}
@@ -68,11 +73,11 @@ export default function index(props) {
               columns={[
                 {
                   title: '大盘名称',
-                  dataIndex: 'name',
+                  dataIndex: 'title',
                   className: 'name-column',
                   render: (text: string, record: DashboardType) => {
                     return (
-                      <Link target="_blank" to={`/dashboards/${record.id}`}>{text}</Link>
+                      <Link target="_blank" to={`${record.url}`}>{text}</Link>
                     );
                   },
                 },
@@ -109,49 +114,23 @@ export default function index(props) {
                   ),
                 },
                 {
-                  title: '更新时间',
-                  width: 240,
-                  dataIndex: 'update_at',
-                  render: (text: number) => moment.unix(text).format('YYYY-MM-DD HH:mm:ss'),
-                },
-                {
-                  title: '发布人',
-                  width: 70,
-                  dataIndex: 'create_by',
-                },
-                {
                   title: '操作',
                   width: 120,
                   render: (text: string, record: DashboardType) => (
                     <div className='table-operator-area'>
                       <div
-                        className='table-operator-area-normal'
-                        onClick={() => {
-                          FormCpt({
-                            mode: 'edit',
-                            initialValues: {
-                              ...record,
-                              tags: record.tags ? _.split(record.tags, ' ') : undefined,
-                            },
-                            busiId,
-                            refreshList: () => {
-                              setRefreshKey(_.uniqueId('refreshKey_'));
-                            },
-                            clusters,
-                          });
-                        }}
-                      >
-                        编辑
-                      </div>
-                      <div
                         className='table-operator-area-warning'
                         onClick={async () => {
                           Modal.confirm({
-                            title: `是否删除大盘：${record.name}?`,
+                            title: `是否删除大盘：${record.title}?`,
                             onOk: async () => {
-                              await removeDashboards([record.id]);
-                              message.success('删除大盘成功');
-                              setRefreshKey(_.uniqueId('refreshKey_'));
+                              const res = await deleteDashboard(record.uid);
+                              if (res.success) {
+                                message.success('删除大盘成功');
+                                setRefreshKey(_.uniqueId('refreshKey_'));
+                              } else {
+                                message.error('删除失败:' + res.dat)
+                              }
                             },
 
                             onCancel() { },
